@@ -1,2 +1,11 @@
+#Unity system folders
 Library
 Temp
+
+#VS/VSCode
+.vscode/
+*.sln
+*.csproj
+
+#Sandbox
+Sandbox*
