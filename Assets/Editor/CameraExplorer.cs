@@ -267,21 +267,28 @@ public class CameraExplorer : EditorWindow
 
 	Rect DrawCameraField(Rect itemPosition, Camera camera)
 	{
-		bool selected = Selection.gameObjects.Contains(camera.gameObject);
-
-		// 現状ベースとなるToggleの上に乗っているコントロールが選択されない…。
-		// どうすればいい？
-		if (GUI.Toggle(itemPosition, 
-			selected,
-			GUIContent.none,
-			GetStyle("PreferencesKeysElement"))
-			&& !selected)
+		// フォーカスが外れたら背景を青じゃなくてグレーにしたいけどどうやるんだ…
+		GUI.enabled = EditorWindow.focusedWindow == this;
 		{
-			Selection.activeGameObject = camera.gameObject;
-			GUI.FocusControl(string.Empty);
-			Debug.LogFormat("{0} selected", camera.name);
-			Repaint();
+			bool selected = Selection.gameObjects.Contains(camera.gameObject);
+
+			// 現状ベースとなるToggleの上に乗っているコントロールが選択されない…。
+			// どうすればいい？
+			if (GUI.Toggle(itemPosition, 
+				selected,
+				GUIContent.none,
+				GetStyle("PreferencesKeysElement"))
+				&& !selected)
+			{
+				// TODO CTRL押しながらで追加、Shift押しながらで範囲選択
+				// > こういうことやろうとすると、選択判定は描画じゃなくてイベントで処理するのが正しいんだろうな？
+				// > そうすればアイテムの押下イベントと、選択イベントの両立ができるのか！！
+				Selection.activeGameObject = camera.gameObject;
+				GUI.FocusControl(string.Empty);
+				Repaint();
+			}
 		}
+		GUI.enabled = true;
 
 		var r = itemPosition;
 		r.x += kItemPaddingX;
