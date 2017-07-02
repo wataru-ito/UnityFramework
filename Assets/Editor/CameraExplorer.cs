@@ -31,7 +31,6 @@ public class CameraExplorer : EditorWindow
 	string m_searchString = string.Empty;
 
 	Column[] m_columnList;
-	Camera m_selected;
 
 	string[] m_layerOptions;
 
@@ -71,6 +70,27 @@ public class CameraExplorer : EditorWindow
 			new Column("Culling Mask", 120f, CullingMaskField),
 			new Column("Clear Flags", 200f, ClearFlagsField),
 		};
+	}
+
+	void OnFocus()
+	{
+	}
+
+	void OnLostFocus()
+	{
+	}
+
+	void OnInspectorUpdate()
+	{
+		if (EditorApplication.isPlaying)
+		{
+			Repaint();
+		}
+	}
+
+	void OnSelectionChange()
+	{
+		Repaint();
 	}
 
 	void OnGUI()
@@ -148,20 +168,28 @@ public class CameraExplorer : EditorWindow
 		// cameras
 		{
 			var cameraList = GetCameraList();
-
-			var viewRect = new Rect(0, 0, GetListWidth(), cameraList.Count * kItemHeight);
-			m_scrollPosition = GUI.BeginScrollView(r, m_scrollPosition, viewRect);
+			if (cameraList.Count == 0)
 			{
-				var itemPosition = new Rect(0, 0, viewRect.width, kItemHeight);
-				foreach (var camera in cameraList)
-				{
-					itemPosition = DrawCameraField(itemPosition, camera);
-				}
+				ShowNotification(new GUIContent("Camera not exists."));
 			}
-			GUI.EndScrollView();
+			else
+			{
+				RemoveNotification();
 
-			// OFFられたカメラを覚えておく
-			m_sleepCamera = cameraList.FindAll(i => !i.enabled);
+				var viewRect = new Rect(0, 0, GetListWidth(), cameraList.Count * kItemHeight);
+				m_scrollPosition = GUI.BeginScrollView(r, m_scrollPosition, viewRect);
+				{
+					var itemPosition = new Rect(0, 0, viewRect.width, kItemHeight);
+					foreach (var camera in cameraList)
+					{
+						itemPosition = DrawCameraField(itemPosition, camera);
+					}
+				}
+				GUI.EndScrollView();
+
+				// OFFられたカメラを覚えておく
+				m_sleepCamera = cameraList.FindAll(i => !i.enabled);
+			}
 		}
 	}
 
@@ -239,18 +267,20 @@ public class CameraExplorer : EditorWindow
 
 	Rect DrawCameraField(Rect itemPosition, Camera camera)
 	{
+		bool selected = Selection.gameObjects.Contains(camera.gameObject);
+
 		// 現状ベースとなるToggleの上に乗っているコントロールが選択されない…。
 		// どうすればいい？
 		if (GUI.Toggle(itemPosition, 
-			m_selected == camera, 
+			selected,
 			GUIContent.none,
-			GetStyle("PlayerSettingsLevel"))
-			&& m_selected != camera)
+			GetStyle("PreferencesKeysElement"))
+			&& !selected)
 		{
-			m_selected = camera;
 			Selection.activeGameObject = camera.gameObject;
 			GUI.FocusControl(string.Empty);
 			Debug.LogFormat("{0} selected", camera.name);
+			Repaint();
 		}
 
 		var r = itemPosition;
