@@ -123,26 +123,56 @@ public class CameraExplorer : EditorWindow
 	{
 		r = DrawHeader(r);
 
-		var viewRect = new Rect(0, 0, GetListWidth(), GetListHeight());
-		
-		m_scrollPosition = GUI.BeginScrollView(r, m_scrollPosition, viewRect);
-		{
-			var itemPosition = new Rect(0, 0, viewRect.width, kItemHeight);
+		// この後描画されるboxで枠線が消えてしまうので削る
+		r.x += 1f;
+		r.width -= 2f;
 
-			var cameraList = GetCameraList();
-			foreach (var camera in cameraList)
+		// background
+		// アイテムが少なくても全域に表示させる必要があるのでアイテム描画と分けている
+		// > スクロールしてると背景と情報表示がずれる…
+		{
+			var prev = GUI.color;
+			var gray = new Color(0.95f, 0.95f, 0.95f);
+
+			float y = r.y - m_scrollPosition.y;
+			for (int i = 0; y < r.y+r.height; ++i, y+=kItemHeight)
 			{
-				itemPosition = DrawCameraField(itemPosition, camera);
+				if (y + kItemHeight < r.y) continue;
+				GUI.color = i%2 == 1 ? prev : gray;
+				var diff = Mathf.Max(0, r.y - y);
+				GUI.Box(new Rect(r.x, y+diff, r.width, kItemHeight-diff), GUIContent.none, "CN EntryBackOdd");
 			}
+			GUI.color = prev;
+		}
+
+		// cameras
+		{
+			var cameraList = GetCameraList();
+
+			var viewRect = new Rect(0, 0, GetListWidth(), cameraList.Count * kItemHeight);
+			m_scrollPosition = GUI.BeginScrollView(r, m_scrollPosition, viewRect);
+			{
+				var itemPosition = new Rect(0, 0, viewRect.width, kItemHeight);
+				foreach (var camera in cameraList)
+				{
+					itemPosition = DrawCameraField(itemPosition, camera);
+				}
+			}
+			GUI.EndScrollView();
+
+			// OFFられたカメラを覚えておく
 			m_sleepCamera = cameraList.FindAll(i => !i.enabled);
 		}
-		GUI.EndScrollView();
 	}
 
 	List<Camera>　GetCameraList()
 	{
 		var cameraList = new List<Camera>(Camera.allCameras);
-		cameraList.AddRange(m_sleepCamera);
+		if (m_sleepCamera.Count > 0)
+		{
+			cameraList.AddRange(m_sleepCamera);
+			cameraList.Sort((x,y) => x.depth.CompareTo(y.depth));
+		}
 
 		if (!string.IsNullOrEmpty(m_searchString))
 		{
@@ -160,11 +190,6 @@ public class CameraExplorer : EditorWindow
 			width += column.width + kSepalatorWidth;
 		}
 		return width;
-	}
-
-	float GetListHeight()
-	{
-		return m_columnList.Length * kItemHeight;
 	}
 
 	Rect DrawHeader(Rect area)
@@ -192,7 +217,7 @@ public class CameraExplorer : EditorWindow
 		}
 		GUI.EndScrollView();
 
-		area.y += kHeaderHeight+2;
+		area.y += kHeaderHeight;
 		area.height -= kHeaderHeight;
 		return area;
 	}
@@ -216,7 +241,6 @@ public class CameraExplorer : EditorWindow
 	{
 		// 現状ベースとなるToggleの上に乗っているコントロールが選択されない…。
 		// どうすればいい？
-
 		if (GUI.Toggle(itemPosition, 
 			m_selected == camera, 
 			GUIContent.none,
@@ -226,18 +250,16 @@ public class CameraExplorer : EditorWindow
 			m_selected = camera;
 			Selection.activeGameObject = camera.gameObject;
 			GUI.FocusControl(string.Empty);
+			Debug.LogFormat("{0} selected", camera.name);
 		}
 
 		var r = itemPosition;
 		r.x += kItemPaddingX;
-
 		foreach (var column in m_columnList)
 		{
 			r.width = column.width;
 			column.DrawField(r, camera);
-			r.x += r.width;
-
-			r.x += kSepalatorWidth;
+			r.x += (r.width + kSepalatorWidth);
 		}
 
 		itemPosition.y += r.height;
