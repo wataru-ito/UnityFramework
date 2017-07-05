@@ -28,13 +28,17 @@ public class CameraExplorer : EditorWindow
 	const float kItemPaddingX = 4;
 
 	Vector2 m_scrollPosition;
+	Rect m_scrollRect;
 	string m_searchString = string.Empty;
 
 	Column[] m_columnList;
 
 	string[] m_layerOptions;
 
-	List<Camera> m_sleepCamera = new List<Camera>();
+	List<Camera> m_cameraList;
+
+	Texture m_selectedImage;
+	Texture m_unselectedImage;
 
 
 	//------------------------------------------------------
@@ -70,6 +74,9 @@ public class CameraExplorer : EditorWindow
 			new Column("Culling Mask", 120f, CullingMaskField),
 			new Column("Clear Flags", 200f, ClearFlagsField),
 		};
+
+		m_selectedImage = EditorGUIUtility.LoadRequired("selected.png") as Texture;
+		m_unselectedImage = EditorGUIUtility.LoadRequired("unselected.png") as Texture;
 	}
 
 	void OnFocus()
@@ -88,11 +95,6 @@ public class CameraExplorer : EditorWindow
 		}
 	}
 
-	void OnSelectionChange()
-	{
-		Repaint();
-	}
-
 	void OnGUI()
 	{
 		// Update Parameter
@@ -100,9 +102,9 @@ public class CameraExplorer : EditorWindow
 			m_layerOptions = Enumerable.Range(0,32)
 				.Select(i => LayerMask.LayerToName(i))
 				.ToArray();
-
-			m_sleepCamera.RemoveAll(i => i.enabled);
 		}
+
+		UpdateCameraList();
 		
 		using (new EditorGUILayout.HorizontalScope())
 		{
@@ -110,16 +112,95 @@ public class CameraExplorer : EditorWindow
 			using (new EditorGUILayout.VerticalScope())
 			{
 				DrawSearchBar();
-
-				GUILayout.Box(GUIContent.none, 
-					GUILayout.ExpandWidth(true),
-					GUILayout.ExpandHeight(true));
-				
-				DrawCameraList(GUILayoutUtility.GetLastRect());
+				DrawCameraList();
 			}
 			GUILayout.Space(12);
 		}
+
+		EventProcedure();
 	}
+
+
+	//------------------------------------------------------
+	// events
+	//------------------------------------------------------
+
+	void EventProcedure()
+	{
+		switch (Event.current.type)
+		{
+			case EventType.MouseDown:
+				if (m_scrollRect.Contains(Event.current.mousePosition))
+				{
+					OnCameraSelected(Event.current);
+					Repaint();
+				}
+				break;
+		}
+	}
+
+	void OnCameraSelected(Event ev)
+	{
+		var index = Mathf.FloorToInt((ev.mousePosition.y - m_scrollRect.y) / kItemHeight);
+		if (index >= m_cameraList.Count)
+		{
+			Selection.activeGameObject = null;
+			return;
+		}
+
+		if (IsSelectionAdditive(ev))
+		{
+			var targetGO = m_cameraList[index].gameObject;
+			var gos = new List<GameObject>(Selection.gameObjects);
+			if (gos.Contains(targetGO))
+			{
+				gos.Remove(targetGO);
+				if (Selection.activeGameObject == targetGO)
+				{
+					Selection.activeGameObject = gos.Count > 0 ? gos[0] : null;
+				}
+			}
+			else
+			{
+				gos.Add(targetGO);
+			}
+			Selection.objects = gos.ToArray();
+			return;
+		}
+		else if (ev.shift)
+		{
+			var firstCamera = Selection.activeGameObject ? Selection.activeGameObject.GetComponent<Camera>() : null;
+			var firstIndex = m_cameraList.IndexOf(firstCamera);
+			if (firstIndex >= 0 && index != firstIndex)
+			{
+				var diff = index-firstIndex;
+				var objects = new UnityEngine.Object[Mathf.Abs(diff)+1];
+				var step = diff > 0 ? 1 : -1;
+				for (int i = 0; i < objects.Length; ++i, firstIndex+=step)
+				{
+					objects[i] = m_cameraList[firstIndex].gameObject;
+				}						
+				Selection.objects = objects;
+				return;
+			}
+		}
+		
+		Selection.activeGameObject = m_cameraList[index].gameObject;
+	}
+
+	bool IsSelectionAdditive(Event ev)
+	{
+		#if UNITY_EDITOR_OSX
+		return ev.command;
+		#else
+		return ev.control;
+		#endif
+	}
+	
+
+	//------------------------------------------------------
+	// gui
+	//------------------------------------------------------
 
 	void DrawSearchBar()
 	{
@@ -135,17 +216,38 @@ public class CameraExplorer : EditorWindow
 		}
 	}
 
-	//------------------------------------------------------
-	// camera list
-	//------------------------------------------------------
-
-	void DrawCameraList(Rect r)
+	void UpdateCameraList()
 	{
+		var tmp = new List<Camera>(Camera.allCameras);
+
+		// ここで寝かせた奴はここで有効にしたいので追加しておく
+		if (m_cameraList != null)
+		{
+			tmp.AddRange(m_cameraList.Where(i => !i.enabled));
+			tmp.Sort((x,y) => x.depth.CompareTo(y.depth));
+		}
+
+		if (!string.IsNullOrEmpty(m_searchString))
+		{
+			tmp.RemoveAll(i => !i.name.Contains(m_searchString));
+		}
+
+		m_cameraList = tmp;
+	}
+
+	void DrawCameraList()
+	{
+		GUILayout.Box(GUIContent.none, 
+			GUILayout.ExpandWidth(true),
+			GUILayout.ExpandHeight(true));
+		
+		var r = GUILayoutUtility.GetLastRect();
 		r = DrawHeader(r);
 
 		// この後描画されるboxで枠線が消えてしまうので削る
 		r.x += 1f;
 		r.width -= 2f;
+		m_scrollRect = r;
 
 		// background
 		// アイテムが少なくても全域に表示させる必要があるのでアイテム描画と分けている
@@ -167,8 +269,7 @@ public class CameraExplorer : EditorWindow
 
 		// cameras
 		{
-			var cameraList = GetCameraList();
-			if (cameraList.Count == 0)
+			if (m_cameraList.Count == 0)
 			{
 				ShowNotification(new GUIContent("Camera not exists."));
 			}
@@ -176,38 +277,18 @@ public class CameraExplorer : EditorWindow
 			{
 				RemoveNotification();
 
-				var viewRect = new Rect(0, 0, GetListWidth(), cameraList.Count * kItemHeight);
-				m_scrollPosition = GUI.BeginScrollView(r, m_scrollPosition, viewRect);
+				var viewRect = new Rect(0, 0, GetListWidth(), m_cameraList.Count * kItemHeight);
+				m_scrollPosition = GUI.BeginScrollView(m_scrollRect, m_scrollPosition, viewRect);
 				{
 					var itemPosition = new Rect(0, 0, viewRect.width, kItemHeight);
-					foreach (var camera in cameraList)
+					foreach (var camera in m_cameraList)
 					{
 						itemPosition = DrawCameraField(itemPosition, camera);
 					}
 				}
 				GUI.EndScrollView();
-
-				// OFFられたカメラを覚えておく
-				m_sleepCamera = cameraList.FindAll(i => !i.enabled);
 			}
 		}
-	}
-
-	List<Camera>　GetCameraList()
-	{
-		var cameraList = new List<Camera>(Camera.allCameras);
-		if (m_sleepCamera.Count > 0)
-		{
-			cameraList.AddRange(m_sleepCamera);
-			cameraList.Sort((x,y) => x.depth.CompareTo(y.depth));
-		}
-
-		if (!string.IsNullOrEmpty(m_searchString))
-		{
-			cameraList.RemoveAll(i => !i.name.Contains(m_searchString));
-		}
-
-		return cameraList;
 	}
 
 	float GetListWidth()
@@ -267,26 +348,16 @@ public class CameraExplorer : EditorWindow
 
 	Rect DrawCameraField(Rect itemPosition, Camera camera)
 	{
-		// フォーカスが外れたら背景を青じゃなくてグレーにしたいけどどうやるんだ…
-		GUI.enabled = EditorWindow.focusedWindow == this;
+		// 選択時の背景色
+		// > 選択されてる時、文字は白にしないといけない。やっぱりGUIStyleでやってるんだろうか？
+		if (Selection.gameObjects.Contains(camera.gameObject))
 		{
-			bool selected = Selection.gameObjects.Contains(camera.gameObject);
-
-			// 現状ベースとなるToggleの上に乗っているコントロールが選択されない…。
-			// どうすればいい？
-			if (GUI.Toggle(itemPosition, 
-				selected,
-				GUIContent.none,
-				GetStyle("PreferencesKeysElement"))
-				&& !selected)
-			{
-				// TODO CTRL押しながらで追加、Shift押しながらで範囲選択
-				// > こういうことやろうとすると、選択判定は描画じゃなくてイベントで処理するのが正しいんだろうな？
-				// > そうすればアイテムの押下イベントと、選択イベントの両立ができるのか！！
-				Selection.activeGameObject = camera.gameObject;
-				GUI.FocusControl(string.Empty);
-				Repaint();
-			}
+			var prev = GUI.color;
+			GUI.color = Color.white;
+			bool focused = EditorWindow.focusedWindow == this;
+			GUI.DrawTexture(itemPosition, 
+				focused ? m_selectedImage : m_unselectedImage);
+			GUI.color = prev;
 		}
 		GUI.enabled = true;
 
