@@ -37,8 +37,7 @@ public class CameraExplorer : EditorWindow
 
 	List<Camera> m_cameraList;
 
-	Texture m_selectedImage;
-	Texture m_unselectedImage;
+	GUIStyle m_labelStyle;
 
 
 	//------------------------------------------------------
@@ -57,7 +56,7 @@ public class CameraExplorer : EditorWindow
 
 	static GUIStyle GetStyle(string styleName)
 	{
-		return GUI.skin.FindStyle(styleName) ?? GUI.skin.label;
+		return GUI.skin.FindStyle(styleName);
 	}
 
 	//------------------------------------------------------
@@ -74,9 +73,6 @@ public class CameraExplorer : EditorWindow
 			new Column("Culling Mask", 120f, CullingMaskField),
 			new Column("Clear Flags", 200f, ClearFlagsField),
 		};
-
-		m_selectedImage = EditorGUIUtility.LoadRequired("selected.png") as Texture;
-		m_unselectedImage = EditorGUIUtility.LoadRequired("unselected.png") as Texture;
 	}
 
 	void OnFocus()
@@ -97,6 +93,19 @@ public class CameraExplorer : EditorWindow
 
 	void OnGUI()
 	{
+		if (m_labelStyle == null)
+		{
+			var template = 	GUI.skin.FindStyle("Hi Label");
+			if (template == null)
+			{
+				EditorGUILayout.HelpBox("GUIStyle not found in BuiltInSkin.¥nWait to vertion up.", MessageType.Warning);
+				return;
+			}
+
+			m_labelStyle = new GUIStyle(template);
+			m_labelStyle.padding.left = 0;
+		}
+
 		// Update Parameter
 		{
 			m_layerOptions = Enumerable.Range(0,32)
@@ -113,6 +122,7 @@ public class CameraExplorer : EditorWindow
 			{
 				DrawSearchBar();
 				DrawCameraList();
+				GUILayout.Space(4);
 			}
 			GUILayout.Space(12);
 		}
@@ -141,7 +151,7 @@ public class CameraExplorer : EditorWindow
 
 	void OnCameraSelected(Event ev)
 	{
-		var index = Mathf.FloorToInt((ev.mousePosition.y - m_scrollRect.y) / kItemHeight);
+		var index = Mathf.FloorToInt((ev.mousePosition.y - m_scrollRect.y + m_scrollPosition.y) / kItemHeight);
 		if (index >= m_cameraList.Count)
 		{
 			Selection.activeGameObject = null;
@@ -244,9 +254,10 @@ public class CameraExplorer : EditorWindow
 		var r = GUILayoutUtility.GetLastRect();
 		r = DrawHeader(r);
 
-		// この後描画されるboxで枠線が消えてしまうので削る
+		// この後描画されるbackgrounで枠線が消えてしまうので削る
 		r.x += 1f;
 		r.width -= 2f;
+		r.height -= 1f;
 		m_scrollRect = r;
 
 		// background
@@ -255,14 +266,19 @@ public class CameraExplorer : EditorWindow
 		{
 			var prev = GUI.color;
 			var gray = new Color(0.95f, 0.95f, 0.95f);
-
-			float y = r.y - m_scrollPosition.y;
-			for (int i = 0; y < r.y+r.height; ++i, y+=kItemHeight)
+			float y = m_scrollRect.yMin - m_scrollPosition.y;
+			for (int i = 0; y < m_scrollRect.yMax; ++i, y+=kItemHeight)
 			{
-				if (y + kItemHeight < r.y) continue;
+				if (y+kItemHeight <= m_scrollRect.yMin) continue;
+				if (y >= m_scrollRect.yMax) continue;
+				
+				var itemPisition = new Rect(m_scrollRect.x, 
+					Mathf.Max(y, m_scrollRect.y), 
+					m_scrollRect.width,
+					Mathf.Min(kItemHeight, m_scrollRect.yMax-y));
+				
 				GUI.color = i%2 == 1 ? prev : gray;
-				var diff = Mathf.Max(0, r.y - y);
-				GUI.Box(new Rect(r.x, y+diff, r.width, kItemHeight-diff), GUIContent.none, "CN EntryBackOdd");
+				GUI.Box(itemPisition, GUIContent.none, "CN EntryBackOdd");
 			}
 			GUI.color = prev;
 		}
@@ -280,7 +296,7 @@ public class CameraExplorer : EditorWindow
 				var viewRect = new Rect(0, 0, GetListWidth(), m_cameraList.Count * kItemHeight);
 				m_scrollPosition = GUI.BeginScrollView(m_scrollRect, m_scrollPosition, viewRect);
 				{
-					var itemPosition = new Rect(0, 0, viewRect.width, kItemHeight);
+					var itemPosition = new Rect(0, 0, Mathf.Max(viewRect.width, m_scrollRect.width), kItemHeight);
 					foreach (var camera in m_cameraList)
 					{
 						itemPosition = DrawCameraField(itemPosition, camera);
@@ -347,19 +363,11 @@ public class CameraExplorer : EditorWindow
 	}
 
 	Rect DrawCameraField(Rect itemPosition, Camera camera)
-	{
-		// 選択時の背景色
-		// > 選択されてる時、文字は白にしないといけない。やっぱりGUIStyleでやってるんだろうか？
-		if (Selection.gameObjects.Contains(camera.gameObject))
-		{
-			var prev = GUI.color;
-			GUI.color = Color.white;
-			bool focused = EditorWindow.focusedWindow == this;
-			GUI.DrawTexture(itemPosition, 
-				focused ? m_selectedImage : m_unselectedImage);
-			GUI.color = prev;
-		}
-		GUI.enabled = true;
+	{		
+		var styleState = GetStyleState(Selection.gameObjects.Contains(camera.gameObject));
+		
+		if (styleState.background)
+			GUI.DrawTexture(itemPosition, styleState.background);
 
 		var r = itemPosition;
 		r.x += kItemPaddingX;
@@ -374,13 +382,20 @@ public class CameraExplorer : EditorWindow
 		return itemPosition;
 	}
 
+	GUIStyleState GetStyleState(bool selected)
+	{
+		if (selected)
+			return EditorWindow.focusedWindow == this ? m_labelStyle.onActive : m_labelStyle.onNormal;
+		return m_labelStyle.normal;
+	}
+
 	//------------------------------------------------------
 	// camera column field
 	//------------------------------------------------------
 
 	void NameField(Rect r, Camera camera)
 	{
-		EditorGUI.LabelField(r, camera.name);
+		EditorGUI.LabelField(r, camera.name, m_labelStyle);
 	}
 
 	void EnabledField(Rect r, Camera camera)
