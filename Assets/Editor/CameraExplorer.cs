@@ -234,7 +234,7 @@ public class CameraExplorer : EditorWindow
 		if (m_cameraList != null)
 		{
 			tmp.AddRange(m_cameraList.Where(i => !i.enabled));
-			tmp.Sort((x,y) => x.depth.CompareTo(y.depth));
+			tmp.Sort(CameraCompareTo);
 		}
 
 		if (!string.IsNullOrEmpty(m_searchString))
@@ -244,6 +244,13 @@ public class CameraExplorer : EditorWindow
 
 		m_cameraList = tmp;
 	}
+	
+	static int CameraCompareTo(Camera x, Camera y)
+	{
+		var result = x.depth.CompareTo(y.depth);
+		return result == 0 ? x.name.CompareTo(y.name) : result;
+	}
+
 
 	void DrawCameraList()
 	{
