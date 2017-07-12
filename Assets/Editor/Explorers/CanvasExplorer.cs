@@ -4,16 +4,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 
-public class CameraExplorer : EditorWindow
+public class CanvasExplorer : EditorWindow
 {
 	class Column
 	{
 		public readonly string name;
 		public readonly GUIContent sepalatorContent;
 		public float width;
-		public Action<Rect,Camera> DrawField;
+		public Action<Rect,Canvas> DrawField;
 
-		public Column(string name, float width, Action<Rect,Camera> DrawField)
+		public Column(string name, float width, Action<Rect,Canvas> DrawField)
 		{
 			this.name = name;
 			this.sepalatorContent = new GUIContent();
@@ -30,12 +30,19 @@ public class CameraExplorer : EditorWindow
 	Vector2 m_scrollPosition;
 	Rect m_scrollRect;
 	string m_searchString = string.Empty;
+	int m_renderMode;
 
 	Column[] m_columnList;
 
+	readonly string[] m_renderModeOptions =
+	{
+		"ScreenSpaceOverlay",
+		"ScreenSpaceCamera",
+		"WorldSpace"
+	};
 	string[] m_layerOptions;
 
-	List<Camera> m_cameraList;
+	List<Canvas> m_canvasList;
 
 	GUIStyle m_labelStyle;
 
@@ -44,13 +51,12 @@ public class CameraExplorer : EditorWindow
 	// static function
 	//------------------------------------------------------
 
-	[MenuItem("Window/Camera Explorer")]
-	public static CameraExplorer Open()
+	[MenuItem("Window/Canvas Explorer")]
+	public static CanvasExplorer Open()
 	{
-		var win = GetWindow<CameraExplorer>();
-		win.titleContent = new GUIContent("Camera Explorer");
+		var win = GetWindow<CanvasExplorer>();
+		win.titleContent = new GUIContent("Canvas Explorer");
 		win.minSize = new Vector2(win.minSize.x, 150);
-		win.Show();
 		return win;
 	}
 
@@ -69,18 +75,20 @@ public class CameraExplorer : EditorWindow
 		{
 			new Column("Name", 120f, NameField),
 			new Column("On", 26f, EnabledField),
-			new Column("Depth", 60f, DepthField),
-			new Column("Culling Mask", 120f, CullingMaskField),
-			new Column("Clear Flags", 200f, ClearFlagsField),
+			new Column("Camera", 100f, CameraField),
+			new Column("Sorting Layer", 100f, SortingLayerField),
+			new Column("Order in Layer", 100f, SortingOrderField),
 		};
 	}
 
 	void OnFocus()
 	{
+		GUI.FocusControl(string.Empty);
 	}
 
-	void OnLostFocus()
+	void OnSelectionChange()
 	{
+		Repaint();
 	}
 
 	void OnInspectorUpdate()
@@ -113,15 +121,16 @@ public class CameraExplorer : EditorWindow
 				.ToArray();
 		}
 
-		UpdateCameraList();
+		UpdateCanvasList();
 		
 		using (new EditorGUILayout.HorizontalScope())
 		{
 			GUILayout.Space(12);
 			using (new EditorGUILayout.VerticalScope())
 			{
+				DrawToolbar();
 				DrawSearchBar();
-				DrawCameraList();
+				DrawCanvasList();
 				GUILayout.Space(4);
 			}
 			GUILayout.Space(12);
@@ -142,17 +151,17 @@ public class CameraExplorer : EditorWindow
 			case EventType.MouseDown:
 				if (m_scrollRect.Contains(Event.current.mousePosition))
 				{
-					OnCameraSelected(Event.current);
+					OnCanvasSelected(Event.current);
 					Repaint();
 				}
 				break;
 		}
 	}
 
-	void OnCameraSelected(Event ev)
+	void OnCanvasSelected(Event ev)
 	{
 		var index = Mathf.FloorToInt((ev.mousePosition.y - m_scrollRect.y + m_scrollPosition.y) / kItemHeight);
-		if (index >= m_cameraList.Count)
+		if (index >= m_canvasList.Count)
 		{
 			Selection.activeGameObject = null;
 			return;
@@ -160,7 +169,7 @@ public class CameraExplorer : EditorWindow
 
 		if (IsSelectionAdditive(ev))
 		{
-			var targetGO = m_cameraList[index].gameObject;
+			var targetGO = m_canvasList[index].gameObject;
 			var gos = new List<GameObject>(Selection.gameObjects);
 			if (gos.Contains(targetGO))
 			{
@@ -179,8 +188,8 @@ public class CameraExplorer : EditorWindow
 		}
 		else if (ev.shift)
 		{
-			var firstCamera = Selection.activeGameObject ? Selection.activeGameObject.GetComponent<Camera>() : null;
-			var firstIndex = m_cameraList.IndexOf(firstCamera);
+			var firstCanvas = Selection.activeGameObject ? Selection.activeGameObject.GetComponent<Canvas>() : null;
+			var firstIndex = m_canvasList.IndexOf(firstCanvas);
 			if (firstIndex >= 0 && index != firstIndex)
 			{
 				var diff = index-firstIndex;
@@ -188,14 +197,14 @@ public class CameraExplorer : EditorWindow
 				var step = diff > 0 ? 1 : -1;
 				for (int i = 0; i < objects.Length; ++i, firstIndex+=step)
 				{
-					objects[i] = m_cameraList[firstIndex].gameObject;
+					objects[i] = m_canvasList[firstIndex].gameObject;
 				}						
 				Selection.objects = objects;
 				return;
 			}
 		}
 		
-		Selection.activeGameObject = m_cameraList[index].gameObject;
+		Selection.activeGameObject = m_canvasList[index].gameObject;
 	}
 
 	bool IsSelectionAdditive(Event ev)
@@ -212,6 +221,11 @@ public class CameraExplorer : EditorWindow
 	// gui
 	//------------------------------------------------------
 
+	void DrawToolbar()
+	{
+		m_renderMode = GUILayout.Toolbar(m_renderMode, m_renderModeOptions);
+		
+	}
 	void DrawSearchBar()
 	{
 		using (new EditorGUILayout.HorizontalScope())
@@ -226,33 +240,32 @@ public class CameraExplorer : EditorWindow
 		}
 	}
 
-	void UpdateCameraList()
+	void UpdateCanvasList()
 	{
-		var tmp = new List<Camera>(Camera.allCameras);
-
-		// ここで寝かせた奴はここで有効にしたいので追加しておく
-		if (m_cameraList != null)
+		var renderMode = RenderMode.ScreenSpaceOverlay;
+		switch (m_renderMode)
 		{
-			tmp.AddRange(m_cameraList.Where(i => !i.enabled));
-			tmp.Sort(CameraCompareTo);
+			case 1: renderMode = RenderMode.ScreenSpaceCamera; break;
+			case 2: renderMode = RenderMode.WorldSpace; break;
 		}
 
+		var tmp = new List<Canvas>(Resources.FindObjectsOfTypeAll<Canvas>().Where(i => i.renderMode == renderMode));
 		if (!string.IsNullOrEmpty(m_searchString))
 		{
 			tmp.RemoveAll(i => !i.name.Contains(m_searchString));
 		}
 
-		m_cameraList = tmp;
+		m_canvasList = tmp;
 	}
 	
-	static int CameraCompareTo(Camera x, Camera y)
+	static int CanvasCompareTo(Canvas x, Canvas y)
 	{
-		var result = x.depth.CompareTo(y.depth);
-		return result == 0 ? x.name.CompareTo(y.name) : result;
+		var result = x.sortingOrder.CompareTo(y.sortingOrder);
+		return result != 0 ? result : x.name.CompareTo(y.name);
 	}
 
 
-	void DrawCameraList()
+	void DrawCanvasList()
 	{
 		GUILayout.Box(GUIContent.none, 
 			GUILayout.ExpandWidth(true),
@@ -290,23 +303,23 @@ public class CameraExplorer : EditorWindow
 			GUI.color = prev;
 		}
 
-		// cameras
+		// Canvass
 		{
-			if (m_cameraList.Count == 0)
+			if (m_canvasList.Count == 0)
 			{
-				ShowNotification(new GUIContent("Camera not exists."));
+				ShowNotification(new GUIContent("Canvas not exists."));
 			}
 			else
 			{
 				RemoveNotification();
 
-				var viewRect = new Rect(0, 0, GetListWidth(), m_cameraList.Count * kItemHeight);
+				var viewRect = new Rect(0, 0, GetListWidth(), m_canvasList.Count * kItemHeight);
 				m_scrollPosition = GUI.BeginScrollView(m_scrollRect, m_scrollPosition, viewRect);
 				{
 					var itemPosition = new Rect(0, 0, Mathf.Max(viewRect.width, m_scrollRect.width), kItemHeight);
-					foreach (var camera in m_cameraList)
+					foreach (var canvas in m_canvasList)
 					{
-						itemPosition = DrawCameraField(itemPosition, camera);
+						itemPosition = DrawCanvasField(itemPosition, canvas);
 					}
 				}
 				GUI.EndScrollView();
@@ -369,9 +382,9 @@ public class CameraExplorer : EditorWindow
 		return r;
 	}
 
-	Rect DrawCameraField(Rect itemPosition, Camera camera)
+	Rect DrawCanvasField(Rect itemPosition, Canvas Canvas)
 	{		
-		var styleState = GetStyleState(Selection.gameObjects.Contains(camera.gameObject));
+		var styleState = GetStyleState(Selection.gameObjects.Contains(Canvas.gameObject));
 		
 		if (styleState.background)
 			GUI.DrawTexture(itemPosition, styleState.background);
@@ -381,7 +394,7 @@ public class CameraExplorer : EditorWindow
 		foreach (var column in m_columnList)
 		{
 			r.width = column.width;
-			column.DrawField(r, camera);
+			column.DrawField(r, Canvas);
 			r.x += (r.width + kSepalatorWidth);
 		}
 
@@ -397,31 +410,31 @@ public class CameraExplorer : EditorWindow
 	}
 
 	//------------------------------------------------------
-	// camera column field
+	// Canvas column field
 	//------------------------------------------------------
 
-	void NameField(Rect r, Camera camera)
+	void NameField(Rect r, Canvas canvas)
 	{
-		EditorGUI.LabelField(r, camera.name, m_labelStyle);
+		EditorGUI.LabelField(r, canvas.name, m_labelStyle);
 	}
 
-	void EnabledField(Rect r, Camera camera)
+	void EnabledField(Rect r, Canvas canvas)
 	{
-		camera.enabled = EditorGUI.Toggle(r, camera.enabled);
+		canvas.enabled = EditorGUI.Toggle(r, canvas.enabled);
 	}
 
-	void DepthField(Rect r, Camera camera)
+	void CameraField(Rect r, Canvas canvas)
 	{
-		camera.depth = EditorGUI.FloatField(r, camera.depth);
+		canvas.worldCamera = EditorGUI.ObjectField(r, canvas.worldCamera, typeof(Camera), true) as Camera;
 	}
 
-	void CullingMaskField(Rect r, Camera camera)
+	void SortingLayerField(Rect r, Canvas canvas)
 	{
-		camera.cullingMask = EditorGUI.MaskField(r, GUIContent.none, camera.cullingMask, m_layerOptions);
+		EditorGUI.LabelField(r, canvas.sortingLayerName);
 	}
 
-	void ClearFlagsField(Rect r, Camera camera)
+	void SortingOrderField(Rect r, Canvas canvas)
 	{
-		camera.clearFlags = (CameraClearFlags)EditorGUI.EnumPopup(r, camera.clearFlags);
+		canvas.sortingOrder = EditorGUI.IntField(r, canvas.sortingOrder);
 	}
 }
