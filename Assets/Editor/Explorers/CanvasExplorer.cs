@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
@@ -128,6 +128,7 @@ public class CanvasExplorer : EditorWindow
 			GUILayout.Space(12);
 			using (new EditorGUILayout.VerticalScope())
 			{
+                GUILayout.Space(8);
 				DrawToolbar();
 				DrawSearchBar();
 				DrawCanvasList();
@@ -223,7 +224,12 @@ public class CanvasExplorer : EditorWindow
 
 	void DrawToolbar()
 	{
-		m_renderMode = GUILayout.Toolbar(m_renderMode, m_renderModeOptions);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            GUILayout.Space(30);
+            m_renderMode = GUILayout.Toolbar(m_renderMode, m_renderModeOptions, GUILayout.Height(24));
+			GUILayout.Space(30);
+		}
 		
 	}
 	void DrawSearchBar()
@@ -304,25 +310,15 @@ public class CanvasExplorer : EditorWindow
 		}
 
 		// Canvass
+		var viewRect = new Rect(0, 0, GetListWidth(), m_canvasList.Count * kItemHeight);
+		using (var scroll = new GUI.ScrollViewScope(m_scrollRect, m_scrollPosition, viewRect))
 		{
-			if (m_canvasList.Count == 0)
-			{
-				ShowNotification(new GUIContent("Canvas not exists."));
-			}
-			else
-			{
-				RemoveNotification();
+            m_scrollPosition = scroll.scrollPosition;
 
-				var viewRect = new Rect(0, 0, GetListWidth(), m_canvasList.Count * kItemHeight);
-				m_scrollPosition = GUI.BeginScrollView(m_scrollRect, m_scrollPosition, viewRect);
-				{
-					var itemPosition = new Rect(0, 0, Mathf.Max(viewRect.width, m_scrollRect.width), kItemHeight);
-					foreach (var canvas in m_canvasList)
-					{
-						itemPosition = DrawCanvasField(itemPosition, canvas);
-					}
-				}
-				GUI.EndScrollView();
+			var itemPosition = new Rect(0, 0, Mathf.Max(viewRect.width, m_scrollRect.width), kItemHeight);
+			foreach (var canvas in m_canvasList)
+			{
+				itemPosition = DrawCanvasField(itemPosition, canvas);
 			}
 		}
 	}
