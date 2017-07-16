@@ -15,7 +15,9 @@ public sealed class CanvasExplorer : ExplorerWindow<Canvas>
 		"WorldSpace",
 	};
 
-	Column[] m_columns;
+	Column[] m_columnsScreenOverlay;
+	Column[] m_columnsScreenCamera;
+	Column[] m_columnsWorldSpace;
 	string[] m_sortingLayerNames;
 	int[] m_sortingLayerUniquIDs;
 	RenderMode m_renderMode;
@@ -43,7 +45,22 @@ public sealed class CanvasExplorer : ExplorerWindow<Canvas>
 		titleContent = new GUIContent("Canvas Explorer");
 		minSize = new Vector2(minSize.x, 150);
 
-		m_columns = new Column[]
+		m_columnsScreenOverlay = new Column[]
+		{
+			new Column("Name", 120f, NameField),
+			new Column("On", 26f, EnabledField),
+			new Column("Sorting Layer", 100f, SortingLayerField),
+			new Column("Order in Layer", 100f, SortingOrderField),
+		};
+		m_columnsScreenCamera = new Column[]
+		{
+			new Column("Name", 120f, NameField),
+			new Column("On", 26f, EnabledField),
+			new Column("Camera", 100f, CameraField),
+			new Column("Sorting Layer", 100f, SortingLayerField),
+			new Column("Order in Layer", 100f, SortingOrderField),
+		};
+		m_columnsWorldSpace = new Column[]
 		{
 			new Column("Name", 120f, NameField),
 			new Column("On", 26f, EnabledField),
@@ -75,7 +92,13 @@ public sealed class CanvasExplorer : ExplorerWindow<Canvas>
 
 	protected override Column[] GetColumns()
 	{
-		return m_columns;
+		switch (m_renderMode)
+		{
+			default:
+			case RenderMode.ScreenSpaceOverlay: return m_columnsScreenOverlay;
+			case RenderMode.ScreenSpaceCamera: return m_columnsScreenCamera;
+			case RenderMode.WorldSpace: return m_columnsWorldSpace;
+		}
 	}
 
 	protected override List<Canvas> GetItemList()
@@ -126,12 +149,14 @@ public sealed class CanvasExplorer : ExplorerWindow<Canvas>
 
 	protected override void DrawHeader()
 	{
+		GUI.enabled = !m_lockList;
         using (new EditorGUILayout.HorizontalScope())
         {
             GUILayout.Space(30);
 			m_renderMode = (RenderMode)GUILayout.Toolbar((int)m_renderMode, m_renderModeOptions, GUILayout.Height(24));
 			GUILayout.Space(30);
 		}
+		GUI.enabled = true;
 		
 		using (new EditorGUILayout.HorizontalScope())
 		{
