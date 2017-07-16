@@ -1,8 +1,11 @@
 ﻿﻿using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
-using System.Linq;
+using UnityEditorInternal;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 public class CanvasExplorer : EditorWindow
 {
@@ -27,24 +30,25 @@ public class CanvasExplorer : EditorWindow
 	const float kSepalatorWidth = 4;
 	const float kItemPaddingX = 4;
 
-	Vector2 m_scrollPosition;
-	Rect m_scrollRect;
-	string m_searchString = string.Empty;
-	int m_renderMode;
-
-	Column[] m_columnList;
-
 	readonly string[] m_renderModeOptions =
 	{
 		"ScreenSpaceOverlay",
 		"ScreenSpaceCamera",
-		"WorldSpace"
+		"WorldSpace",
 	};
-	string[] m_layerOptions;
 
+	Column[] m_columnList;
+	string[] m_sortingLayerNames;
+	int[] m_sortingLayerUniquIDs;
+	RenderMode m_renderMode;
+	string m_searchString = string.Empty;
 	List<Canvas> m_canvasList;
+	bool m_lockList;
 
+	GUISkin m_skin;
 	GUIStyle m_labelStyle;
+	Vector2 m_scrollPosition;
+	Rect m_scrollRect;
 
 
 	//------------------------------------------------------
@@ -54,31 +58,19 @@ public class CanvasExplorer : EditorWindow
 	[MenuItem("Window/Canvas Explorer")]
 	public static CanvasExplorer Open()
 	{
-		var win = GetWindow<CanvasExplorer>();
-		win.titleContent = new GUIContent("Canvas Explorer");
-		win.minSize = new Vector2(win.minSize.x, 150);
-		return win;
+		return GetWindow<CanvasExplorer>();
 	}
 
-	static GUIStyle GetStyle(string styleName)
-	{
-		return GUI.skin.FindStyle(styleName);
-	}
 
 	//------------------------------------------------------
 	// unity system function
 	//------------------------------------------------------
 
 	void OnEnable()
-	{	
-		m_columnList = new Column[]
-		{
-			new Column("Name", 120f, NameField),
-			new Column("On", 26f, EnabledField),
-			new Column("Camera", 100f, CameraField),
-			new Column("Sorting Layer", 100f, SortingLayerField),
-			new Column("Order in Layer", 100f, SortingOrderField),
-		};
+	{
+		titleContent = new GUIContent("Canvas Explorer");
+		minSize = new Vector2(minSize.x, 150);
+		InitGUI();
 	}
 
 	void OnFocus()
@@ -101,27 +93,14 @@ public class CanvasExplorer : EditorWindow
 
 	void OnGUI()
 	{
-		if (m_labelStyle == null)
-		{
-			var template = 	GUI.skin.FindStyle("Hi Label");
-			if (template == null)
-			{
-				EditorGUILayout.HelpBox("GUIStyle not found in BuiltInSkin.¥nWait to vertion up.", MessageType.Warning);
-				return;
-			}
+		// 表示しながらレイヤーを編集している可能性も考慮して毎回更新する
+		m_sortingLayerNames = GetSortingLayerNames();
+		m_sortingLayerUniquIDs = GetSortingLayerUniqueIDs();
 
-			m_labelStyle = new GUIStyle(template);
-			m_labelStyle.padding.left = 0;
-		}
-
-		// Update Parameter
-		{
-			m_layerOptions = Enumerable.Range(0,32)
-				.Select(i => LayerMask.LayerToName(i))
-				.ToArray();
-		}
-
-		UpdateCanvasList();
+		if (m_canvasList == null || !m_lockList)
+			m_canvasList = GetCanvasList();
+		else
+			m_canvasList.RemoveAll(i => i == null);
 		
 		using (new EditorGUILayout.HorizontalScope())
 		{
@@ -138,6 +117,51 @@ public class CanvasExplorer : EditorWindow
 		}
 
 		EventProcedure();
+	}
+
+
+	//------------------------------------------------------
+	// canvas list
+	//------------------------------------------------------
+
+	List<Canvas> GetCanvasList()
+	{
+		var tmp = new List<Canvas>(Resources.FindObjectsOfTypeAll<Canvas>().Where(i => i.renderMode == m_renderMode));
+		if (!string.IsNullOrEmpty(m_searchString))
+		{
+			tmp.RemoveAll(i => !i.name.Contains(m_searchString));
+		}
+
+		tmp.Sort(CanvasCompareTo);
+
+		return tmp;
+	}
+
+	int CanvasCompareTo(Canvas x, Canvas y)
+	{
+		int result = 0;
+
+		switch (m_renderMode)
+		{
+			case RenderMode.ScreenSpaceCamera:
+			case RenderMode.WorldSpace:
+				result = GetCameraDepth(x).CompareTo(GetCameraDepth(y));
+				if (result != 0) return result;
+				break;
+		}
+
+		result = Array.IndexOf(m_sortingLayerUniquIDs, x.sortingLayerID).CompareTo(Array.IndexOf(m_sortingLayerUniquIDs, y.sortingLayerID));
+		if (result != 0) return result;
+
+		result = x.sortingOrder.CompareTo(y.sortingOrder);
+		if (result != 0) return result;
+	
+		return x.name.CompareTo(y.name);
+	}
+
+	static float GetCameraDepth(Canvas canvas)
+	{
+		return canvas.worldCamera ? canvas.worldCamera.depth : 0f;
 	}
 
 
@@ -222,12 +246,29 @@ public class CanvasExplorer : EditorWindow
 	// gui
 	//------------------------------------------------------
 
+	void InitGUI()
+	{
+		m_columnList = new Column[]
+		{
+			new Column("Name", 120f, NameField),
+			new Column("On", 26f, EnabledField),
+			new Column("Camera", 100f, CameraField),
+			new Column("Sorting Layer", 100f, SortingLayerField),
+			new Column("Order in Layer", 100f, SortingOrderField),
+		};
+
+		var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this));
+		m_skin = AssetDatabase.LoadAssetAtPath<GUISkin>(
+			string.Format("{0}/CanvasExplorer.guiskin", Path.GetDirectoryName(scriptPath)));
+		m_labelStyle = m_skin.FindStyle("Hi Label");
+	}
+
 	void DrawToolbar()
 	{
         using (new EditorGUILayout.HorizontalScope())
         {
             GUILayout.Space(30);
-            m_renderMode = GUILayout.Toolbar(m_renderMode, m_renderModeOptions, GUILayout.Height(24));
+			m_renderMode = (RenderMode)GUILayout.Toolbar((int)m_renderMode, m_renderModeOptions, GUILayout.Height(24));
 			GUILayout.Space(30);
 		}
 		
@@ -236,40 +277,16 @@ public class CanvasExplorer : EditorWindow
 	{
 		using (new EditorGUILayout.HorizontalScope())
 		{
-			GUILayout.Space(position.width * 0.5f);
-			m_searchString = GUILayout.TextField(m_searchString, GetStyle("SearchTextField"));
-			if (GUILayout.Button(GUIContent.none, GetStyle("SearchCancelButton")))
+			m_lockList = GUILayout.Toggle(m_lockList, "Lock List");
+
+			m_searchString = GUILayout.TextField(m_searchString, "SearchTextField", GUILayout.Width(300));
+			if (GUILayout.Button(GUIContent.none, "SearchCancelButton"))
 			{
 				m_searchString = string.Empty;
 				GUI.FocusControl(null);
 			}
 		}
 	}
-
-	void UpdateCanvasList()
-	{
-		var renderMode = RenderMode.ScreenSpaceOverlay;
-		switch (m_renderMode)
-		{
-			case 1: renderMode = RenderMode.ScreenSpaceCamera; break;
-			case 2: renderMode = RenderMode.WorldSpace; break;
-		}
-
-		var tmp = new List<Canvas>(Resources.FindObjectsOfTypeAll<Canvas>().Where(i => i.renderMode == renderMode));
-		if (!string.IsNullOrEmpty(m_searchString))
-		{
-			tmp.RemoveAll(i => !i.name.Contains(m_searchString));
-		}
-
-		m_canvasList = tmp;
-	}
-	
-	static int CanvasCompareTo(Canvas x, Canvas y)
-	{
-		var result = x.sortingOrder.CompareTo(y.sortingOrder);
-		return result != 0 ? result : x.name.CompareTo(y.name);
-	}
-
 
 	void DrawCanvasList()
 	{
@@ -286,30 +303,10 @@ public class CanvasExplorer : EditorWindow
 		r.height -= 1f;
 		m_scrollRect = r;
 
-		// background
 		// アイテムが少なくても全域に表示させる必要があるのでアイテム描画と分けている
 		// > スクロールしてると背景と情報表示がずれる…
-		{
-			var prev = GUI.color;
-			var gray = new Color(0.95f, 0.95f, 0.95f);
-			float y = m_scrollRect.yMin - m_scrollPosition.y;
-			for (int i = 0; y < m_scrollRect.yMax; ++i, y+=kItemHeight)
-			{
-				if (y+kItemHeight <= m_scrollRect.yMin) continue;
-				if (y >= m_scrollRect.yMax) continue;
-				
-				var itemPisition = new Rect(m_scrollRect.x, 
-					Mathf.Max(y, m_scrollRect.y), 
-					m_scrollRect.width,
-					Mathf.Min(kItemHeight, m_scrollRect.yMax-y));
-				
-				GUI.color = i%2 == 1 ? prev : gray;
-				GUI.Box(itemPisition, GUIContent.none, "CN EntryBackOdd");
-			}
-			GUI.color = prev;
-		}
+		DrawBackground();
 
-		// Canvass
 		var viewRect = new Rect(0, 0, GetListWidth(), m_canvasList.Count * kItemHeight);
 		using (var scroll = new GUI.ScrollViewScope(m_scrollRect, m_scrollPosition, viewRect))
 		{
@@ -372,16 +369,36 @@ public class CanvasExplorer : EditorWindow
 				kSepalatorWidth,
 				r.height + 4), 
 			column.sepalatorContent, 
-			GetStyle("DopesheetBackground"));
+			"DopesheetBackground");
 
 		r.x += kSepalatorWidth;
 		return r;
 	}
 
+	void DrawBackground()
+	{
+		var prev = GUI.color;
+		var gray = new Color(0.95f, 0.95f, 0.95f);
+		float y = m_scrollRect.yMin - m_scrollPosition.y;
+		for (int i = 0; y < m_scrollRect.yMax; ++i, y += kItemHeight)
+		{
+			if (y + kItemHeight <= m_scrollRect.yMin) continue;
+			if (y >= m_scrollRect.yMax) continue;
+
+			var itemPisition = new Rect(m_scrollRect.x,
+				Mathf.Max(y, m_scrollRect.y),
+				m_scrollRect.width,
+				Mathf.Min(kItemHeight, m_scrollRect.yMax - y));
+
+			GUI.color = i % 2 == 1 ? prev : gray;
+			GUI.Box(itemPisition, GUIContent.none, "CN EntryBackOdd");
+		}
+		GUI.color = prev;
+	}
+
 	Rect DrawCanvasField(Rect itemPosition, Canvas Canvas)
 	{		
 		var styleState = GetStyleState(Selection.gameObjects.Contains(Canvas.gameObject));
-		
 		if (styleState.background)
 			GUI.DrawTexture(itemPosition, styleState.background);
 
@@ -405,6 +422,7 @@ public class CanvasExplorer : EditorWindow
 		return m_labelStyle.normal;
 	}
 
+
 	//------------------------------------------------------
 	// Canvas column field
 	//------------------------------------------------------
@@ -426,11 +444,32 @@ public class CanvasExplorer : EditorWindow
 
 	void SortingLayerField(Rect r, Canvas canvas)
 	{
-		EditorGUI.LabelField(r, canvas.sortingLayerName);
+		canvas.sortingLayerID = EditorGUI.IntPopup(r, canvas.sortingLayerID, 
+			m_sortingLayerNames, 
+			m_sortingLayerUniquIDs);
 	}
 
 	void SortingOrderField(Rect r, Canvas canvas)
 	{
 		canvas.sortingOrder = EditorGUI.IntField(r, canvas.sortingOrder);
+	}
+
+
+	//------------------------------------------------------
+	// unity internals
+	//------------------------------------------------------
+
+	static string[] GetSortingLayerNames()
+	{
+		Type internalEditorUtilityType = typeof(InternalEditorUtility);
+		PropertyInfo sortingLayersProperty = internalEditorUtilityType.GetProperty("sortingLayerNames", BindingFlags.Static | BindingFlags.NonPublic);
+		return (string[])sortingLayersProperty.GetValue(null, new object[0]);
+	}
+
+	static int[] GetSortingLayerUniqueIDs()
+	{
+		Type internalEditorUtilityType = typeof(InternalEditorUtility);
+		PropertyInfo sortingLayerUniqueIDsProperty = internalEditorUtilityType.GetProperty("sortingLayerUniqueIDs", BindingFlags.Static | BindingFlags.NonPublic);
+		return (int[])sortingLayerUniqueIDsProperty.GetValue(null, new object[0]);
 	}
 }
