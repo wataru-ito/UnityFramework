@@ -3,33 +3,11 @@ using UnityEditor;
 using UnityEditorInternal;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 
-public class CanvasExplorer : EditorWindow
+public sealed class CanvasExplorer : ExplorerWindow<Canvas>
 {
-	class Column
-	{
-		public readonly string name;
-		public readonly GUIContent sepalatorContent;
-		public float width;
-		public Action<Rect,Canvas> DrawField;
-
-		public Column(string name, float width, Action<Rect,Canvas> DrawField)
-		{
-			this.name = name;
-			this.sepalatorContent = new GUIContent();
-			this.width = width;
-			this.DrawField = DrawField;
-		}
-	}
-
-	const float kHeaderHeight = 28f;
-	const float kItemHeight = 16f;
-	const float kSepalatorWidth = 4;
-	const float kItemPaddingX = 4;
-
 	readonly string[] m_renderModeOptions =
 	{
 		"ScreenSpaceOverlay",
@@ -37,18 +15,12 @@ public class CanvasExplorer : EditorWindow
 		"WorldSpace",
 	};
 
-	Column[] m_columnList;
+	Column[] m_columns;
 	string[] m_sortingLayerNames;
 	int[] m_sortingLayerUniquIDs;
 	RenderMode m_renderMode;
 	string m_searchString = string.Empty;
-	List<Canvas> m_canvasList;
 	bool m_lockList;
-
-	GUISkin m_skin;
-	GUIStyle m_labelStyle;
-	Vector2 m_scrollPosition;
-	Rect m_scrollRect;
 
 
 	//------------------------------------------------------
@@ -66,66 +38,54 @@ public class CanvasExplorer : EditorWindow
 	// unity system function
 	//------------------------------------------------------
 
-	void OnEnable()
+	protected override void OnEnable()
 	{
 		titleContent = new GUIContent("Canvas Explorer");
 		minSize = new Vector2(minSize.x, 150);
-		InitGUI();
-	}
 
-	void OnFocus()
-	{
-		GUI.FocusControl(string.Empty);
-	}
-
-	void OnSelectionChange()
-	{
-		Repaint();
-	}
-
-	void OnInspectorUpdate()
-	{
-		if (EditorApplication.isPlaying)
+		m_columns = new Column[]
 		{
-			Repaint();
-		}
+			new Column("Name", 120f, NameField),
+			new Column("On", 26f, EnabledField),
+			new Column("Camera", 100f, CameraField),
+			new Column("Sorting Layer", 100f, SortingLayerField),
+			new Column("Order in Layer", 100f, SortingOrderField),
+		};
+
+		base.OnEnable();
 	}
 
-	void OnGUI()
+	protected override void OnGUI()
 	{
 		// 表示しながらレイヤーを編集している可能性も考慮して毎回更新する
 		m_sortingLayerNames = GetSortingLayerNames();
 		m_sortingLayerUniquIDs = GetSortingLayerUniqueIDs();
 
-		if (m_canvasList == null || !m_lockList)
-			m_canvasList = GetCanvasList();
-		else
-			m_canvasList.RemoveAll(i => i == null);
-		
-		using (new EditorGUILayout.HorizontalScope())
-		{
-			GUILayout.Space(12);
-			using (new EditorGUILayout.VerticalScope())
-			{
-                GUILayout.Space(8);
-				DrawToolbar();
-				DrawSearchBar();
-				DrawCanvasList();
-				GUILayout.Space(4);
-			}
-			GUILayout.Space(12);
-		}
-
-		EventProcedure();
+		base.OnGUI();
 	}
 
-
 	//------------------------------------------------------
-	// canvas list
+	// abstract methods
 	//------------------------------------------------------
 
-	List<Canvas> GetCanvasList()
+	protected override MonoScript GetScript()
 	{
+		return MonoScript.FromScriptableObject(this);
+	}
+
+	protected override Column[] GetColumns()
+	{
+		return m_columns;
+	}
+
+	protected override List<Canvas> GetItemList()
+	{
+		if (m_lockList)
+		{
+			m_itemList.RemoveAll(i => i == null);
+			return m_itemList;
+		}
+
 		var tmp = new List<Canvas>(Resources.FindObjectsOfTypeAll<Canvas>().Where(i => i.renderMode == m_renderMode));
 		if (!string.IsNullOrEmpty(m_searchString))
 		{
@@ -164,106 +124,7 @@ public class CanvasExplorer : EditorWindow
 		return canvas.worldCamera ? canvas.worldCamera.depth : 0f;
 	}
 
-
-	//------------------------------------------------------
-	// events
-	//------------------------------------------------------
-
-	void EventProcedure()
-	{
-		switch (Event.current.type)
-		{
-			case EventType.MouseDown:
-				if (m_scrollRect.Contains(Event.current.mousePosition))
-				{
-					OnCanvasSelected(Event.current);
-					Repaint();
-				}
-				break;
-		}
-	}
-
-	void OnCanvasSelected(Event ev)
-	{
-		var index = Mathf.FloorToInt((ev.mousePosition.y - m_scrollRect.y + m_scrollPosition.y) / kItemHeight);
-		if (index >= m_canvasList.Count)
-		{
-			Selection.activeGameObject = null;
-			return;
-		}
-
-		if (IsSelectionAdditive(ev))
-		{
-			var targetGO = m_canvasList[index].gameObject;
-			var gos = new List<GameObject>(Selection.gameObjects);
-			if (gos.Contains(targetGO))
-			{
-				gos.Remove(targetGO);
-				if (Selection.activeGameObject == targetGO)
-				{
-					Selection.activeGameObject = gos.Count > 0 ? gos[0] : null;
-				}
-			}
-			else
-			{
-				gos.Add(targetGO);
-			}
-			Selection.objects = gos.ToArray();
-			return;
-		}
-		else if (ev.shift)
-		{
-			var firstCanvas = Selection.activeGameObject ? Selection.activeGameObject.GetComponent<Canvas>() : null;
-			var firstIndex = m_canvasList.IndexOf(firstCanvas);
-			if (firstIndex >= 0 && index != firstIndex)
-			{
-				var diff = index-firstIndex;
-				var objects = new UnityEngine.Object[Mathf.Abs(diff)+1];
-				var step = diff > 0 ? 1 : -1;
-				for (int i = 0; i < objects.Length; ++i, firstIndex+=step)
-				{
-					objects[i] = m_canvasList[firstIndex].gameObject;
-				}						
-				Selection.objects = objects;
-				return;
-			}
-		}
-		
-		Selection.activeGameObject = m_canvasList[index].gameObject;
-	}
-
-	bool IsSelectionAdditive(Event ev)
-	{
-		#if UNITY_EDITOR_OSX
-		return ev.command;
-		#else
-		return ev.control;
-		#endif
-	}
-	
-
-	//------------------------------------------------------
-	// gui
-	//------------------------------------------------------
-
-	void InitGUI()
-	{
-		m_columnList = new Column[]
-		{
-			new Column("Name", 120f, NameField),
-			new Column("On", 26f, EnabledField),
-			new Column("Camera", 100f, CameraField),
-			new Column("Sorting Layer", 100f, SortingLayerField),
-			new Column("Order in Layer", 100f, SortingOrderField),
-		};
-
-		var scriptPath = AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this));
-		m_skin = AssetDatabase.LoadAssetAtPath<GUISkin>(
-			string.Format("{0}/CanvasExplorer.guiskin", Path.GetDirectoryName(scriptPath)));
-		m_labelStyle = m_skin.FindStyle("Hi Label");
-	}
-
-	void DrawToolbar()
+	protected override void DrawHeader()
 	{
         using (new EditorGUILayout.HorizontalScope())
         {
@@ -272,9 +133,6 @@ public class CanvasExplorer : EditorWindow
 			GUILayout.Space(30);
 		}
 		
-	}
-	void DrawSearchBar()
-	{
 		using (new EditorGUILayout.HorizontalScope())
 		{
 			m_lockList = GUILayout.Toggle(m_lockList, "Lock List");
@@ -286,140 +144,6 @@ public class CanvasExplorer : EditorWindow
 				GUI.FocusControl(null);
 			}
 		}
-	}
-
-	void DrawCanvasList()
-	{
-		GUILayout.Box(GUIContent.none, 
-			GUILayout.ExpandWidth(true),
-			GUILayout.ExpandHeight(true));
-		
-		var r = GUILayoutUtility.GetLastRect();
-		r = DrawHeader(r);
-
-		// この後描画されるbackgrounで枠線が消えてしまうので削る
-		r.x += 1f;
-		r.width -= 2f;
-		r.height -= 1f;
-		m_scrollRect = r;
-
-		// アイテムが少なくても全域に表示させる必要があるのでアイテム描画と分けている
-		// > スクロールしてると背景と情報表示がずれる…
-		DrawBackground();
-
-		var viewRect = new Rect(0, 0, GetListWidth(), m_canvasList.Count * kItemHeight);
-		using (var scroll = new GUI.ScrollViewScope(m_scrollRect, m_scrollPosition, viewRect))
-		{
-            m_scrollPosition = scroll.scrollPosition;
-
-			var itemPosition = new Rect(0, 0, Mathf.Max(viewRect.width, m_scrollRect.width), kItemHeight);
-			foreach (var canvas in m_canvasList)
-			{
-				itemPosition = DrawCanvasField(itemPosition, canvas);
-			}
-		}
-	}
-
-	float GetListWidth()
-	{
-		float width = kItemPaddingX * 2f;
-		foreach (var column in m_columnList)
-		{
-			width += column.width + kSepalatorWidth;
-		}
-		return width;
-	}
-
-	Rect DrawHeader(Rect area)
-	{
-		var position = new Rect(area.x, area.y, area.width, kHeaderHeight);
-		var viewRect = new Rect(0, 0, area.width, kHeaderHeight);
-
-		GUI.Box(position, GUIContent.none);
-		GUI.BeginScrollView(position, m_scrollPosition, viewRect);
-		{
-			var r = new Rect(
-				kItemPaddingX - m_scrollPosition.x, 
-				kHeaderHeight - kItemHeight - 2,
-				0,
-				kItemHeight);
-
-			foreach (var column in m_columnList)
-			{
-				r.width = column.width;
-				EditorGUI.LabelField(r, column.name);
-				r.x += r.width;
-
-				r = DrawColumSeparator(r, column);
-			}
-		}
-		GUI.EndScrollView();
-
-		area.y += kHeaderHeight;
-		area.height -= kHeaderHeight;
-		return area;
-	}
-
-	Rect DrawColumSeparator(Rect r, Column column)
-	{
-		EditorGUI.LabelField(
-			new Rect(
-				r.x,
-				r.y - 6,
-				kSepalatorWidth,
-				r.height + 4), 
-			column.sepalatorContent, 
-			"DopesheetBackground");
-
-		r.x += kSepalatorWidth;
-		return r;
-	}
-
-	void DrawBackground()
-	{
-		var prev = GUI.color;
-		var gray = new Color(0.95f, 0.95f, 0.95f);
-		float y = m_scrollRect.yMin - m_scrollPosition.y;
-		for (int i = 0; y < m_scrollRect.yMax; ++i, y += kItemHeight)
-		{
-			if (y + kItemHeight <= m_scrollRect.yMin) continue;
-			if (y >= m_scrollRect.yMax) continue;
-
-			var itemPisition = new Rect(m_scrollRect.x,
-				Mathf.Max(y, m_scrollRect.y),
-				m_scrollRect.width,
-				Mathf.Min(kItemHeight, m_scrollRect.yMax - y));
-
-			GUI.color = i % 2 == 1 ? prev : gray;
-			GUI.Box(itemPisition, GUIContent.none, "CN EntryBackOdd");
-		}
-		GUI.color = prev;
-	}
-
-	Rect DrawCanvasField(Rect itemPosition, Canvas Canvas)
-	{		
-		var styleState = GetStyleState(Selection.gameObjects.Contains(Canvas.gameObject));
-		if (styleState.background)
-			GUI.DrawTexture(itemPosition, styleState.background);
-
-		var r = itemPosition;
-		r.x += kItemPaddingX;
-		foreach (var column in m_columnList)
-		{
-			r.width = column.width;
-			column.DrawField(r, Canvas);
-			r.x += (r.width + kSepalatorWidth);
-		}
-
-		itemPosition.y += r.height;
-		return itemPosition;
-	}
-
-	GUIStyleState GetStyleState(bool selected)
-	{
-		if (selected)
-			return EditorWindow.focusedWindow == this ? m_labelStyle.onActive : m_labelStyle.onNormal;
-		return m_labelStyle.normal;
 	}
 
 
