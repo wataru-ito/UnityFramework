@@ -6,9 +6,11 @@ using UnityEditor;
 
 public class BuiltinResourceView : EditorWindow
 {
-	const float kItemSize = 128f;
+	const float kThumbSize = 128f;
+	const float kLabelHeight = 16f;
 	const float kPadding = 4f;
-	const float kPreviewHeight = 128f;
+	const float kItemWidth = kThumbSize + kPadding;
+	const float kItemHeight = kThumbSize + kLabelHeight + kPadding;
 	Texture[] m_textures;
 
 	Vector2 m_scrollPosition;
@@ -44,6 +46,8 @@ public class BuiltinResourceView : EditorWindow
 			.Select(i => i as Texture)
 			.Where(i => i != null)
 			.ToArray();
+
+		minSize = new Vector2(300, 200);
 	}
 
 	void OnGUI()
@@ -76,6 +80,7 @@ public class BuiltinResourceView : EditorWindow
 		GUILayout.Box(GUIContent.none, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
 
 		var scrollRect = GUILayoutUtility.GetLastRect();
+		// boxの枠が消えちゃうから削っておく
 		scrollRect.x += 1f;
 		scrollRect.y += 1f;
 		scrollRect.width -= 2f;
@@ -86,20 +91,27 @@ public class BuiltinResourceView : EditorWindow
 			m_textures :
 			Array.FindAll(m_textures, i => i.name.Contains(m_searchString));
 
-		var columnCount = Mathf.FloorToInt(scrollRect.width / kItemSize);
-		var rawCount = Mathf.CeilToInt(targets.Length / (float)columnCount);
+		var column = Mathf.FloorToInt((scrollRect.width - 16f) / kItemWidth);
+		var raw = Mathf.CeilToInt(targets.Length / (float)column);
 
-
-		var viewRect = new Rect(0, 0, scrollRect.width - 16, rawCount * (kItemSize + kPadding));
+		var viewRect = new Rect(0, 0, scrollRect.width - 16f, raw * kItemHeight);
 		using (var scroll = new GUI.ScrollViewScope(scrollRect, m_scrollPosition, viewRect))
 		{
-			for (int i = 0; i < rawCount; ++i)
+			var top = scrollRect.y + m_scrollPosition.y;
+			var bottom = top + scrollRect.height;
+
+			for (int i = 0; i < raw; ++i)
 			{
-				DrawColumn(i * (kItemSize + kPadding), targets, i * columnCount, columnCount);
+				var y = i * kItemHeight;
+				if (y >= bottom || y + kItemHeight <= top) continue;
+
+				DrawColumn(y, targets, i * column, column);
 			}
 
 			m_scrollPosition = scroll.scrollPosition;
 		}
+
+		EditorGUILayout.HelpBox("ダブルクリックでInpsectorにPreview表示", MessageType.Info);
 	}
 
 	void DrawColumn(float y, Texture[] textures, int textureIndex, int count)
@@ -107,20 +119,23 @@ public class BuiltinResourceView : EditorWindow
 		count = Mathf.Min(count, textures.Length - 1 - textureIndex);
 		for (int i = 0; i < count; ++i)
 		{
-			var rect = new Rect(i * (kItemSize + kPadding), y, kItemSize, kItemSize);
-
 			var texture = textures[textureIndex + i];
+			
+			var rect = new Rect(i * kItemWidth, y, kThumbSize, kLabelHeight);
+			EditorGUI.LabelField(rect, texture.name);
+
+			rect.y += rect.height;
+			rect.height = kThumbSize;
 			if (texture.width >= texture.height)
 			{
-				rect.height = texture.height / (float)texture.width * kItemSize;
+				rect.height = texture.height / (float)texture.width * kThumbSize;
 			}
 			else
 			{
-				rect.width = texture.width / (float)texture.height * kItemSize;
+				rect.width = texture.width / (float)texture.height * kThumbSize;
 			}
 
 			EditorGUI.ObjectField(rect, texture, typeof(Texture), false);
-			//GUI.DrawTexture(rect, texture);
 		}
 	}
 }
