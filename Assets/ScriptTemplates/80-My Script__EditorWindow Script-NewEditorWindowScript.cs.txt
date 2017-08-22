@@ -1,0 +1,26 @@
+using UnityEditor;
+using UnityEngine;
+
+namespace ToolboxEditor
+{
+	public class #SCRIPTNAME# : EditorWindow
+	{
+		//------------------------------------------------------
+		// static function
+		//------------------------------------------------------
+
+		[MenuItem("Window/#SCRIPTNAME#")]
+		static void Open()
+		{
+			GetWindow<#SCRIPTNAME#>();
+		}
+
+		//------------------------------------------------------
+		// unity system function
+		//------------------------------------------------------
+
+		void OnGUI()
+		{
+		}	
+	}
+}

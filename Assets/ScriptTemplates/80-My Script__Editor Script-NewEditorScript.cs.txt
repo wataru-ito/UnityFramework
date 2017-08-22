@@ -1,0 +1,18 @@
+using UnityEditor;
+using UnityEngine;
+
+namespace Toolbox
+{
+	[CustomEditor(typeof(#SCRIPTNAME#))]
+	public class #SCRIPTNAME# : Editor
+	{
+		//------------------------------------------------------
+		// unity system function
+		//------------------------------------------------------
+
+        public override void OnInspectorGUI()
+		{
+			base.OnInspectorGUI();
+		}	
+	}
+}

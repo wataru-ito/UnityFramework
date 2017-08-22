@@ -1,0 +1,12 @@
+using UnityEngine;
+
+namespace Toolbox
+{
+	public class #SCRIPTNAME# : MonoBehaviour
+	{
+		//------------------------------------------------------
+		// unity system function
+		//------------------------------------------------------
+				
+	}
+}
