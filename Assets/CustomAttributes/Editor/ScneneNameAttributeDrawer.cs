@@ -33,7 +33,7 @@ public class ScneneNameAttributeDrawer : PropertyDrawer
 		
 		var index = System.Array.IndexOf(m_sceneNames, property.stringValue);
 		index = EditorGUI.Popup(position, property.displayName, index, m_sceneNames);
-		if (index > 0)
+		if (index >= 0)
 		{
 			property.stringValue = m_sceneNames[index];
 		}
