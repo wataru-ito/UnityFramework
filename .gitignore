@@ -21,3 +21,6 @@ sysinfo.txt
 
 # Sandbox
 [Ss]andbox*
+
+# Projects
+Assets/Editor/SceneMenuCode.cs*

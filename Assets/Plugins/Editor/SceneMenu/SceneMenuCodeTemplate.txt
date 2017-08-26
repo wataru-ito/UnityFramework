@@ -1,0 +1,14 @@
+﻿// このファイルはSceneMenuGeneratorから自動生成されたファイルです
+using UnityEditor;
+using UnityEditor.SceneManagement;
+
+public static class SceneMenuItem
+{
+	##MENU_LIST_BEGIN##
+	[MenuItem(@"##MENU_ITEM_PATH##", false, ##PRIORITY##)]
+	static void Open##MENU_NAME##()
+	{
+		EditorSceneManager.OpenScene(@"##ASSET_PATH##");
+	}
+	##MENU_LIST_END##
+}

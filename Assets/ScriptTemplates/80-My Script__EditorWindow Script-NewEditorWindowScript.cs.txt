@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace ToolboxEditor
+namespace FrameworkEditor
 {
 	public class #SCRIPTNAME# : EditorWindow
 	{
