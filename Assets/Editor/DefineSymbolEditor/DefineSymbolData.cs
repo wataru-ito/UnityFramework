@@ -40,11 +40,13 @@ namespace DefineSymbolEditor
 	{
 		const string kFilePath = "ProjectSettings/DefineSymbolEditor.txt";
 
+		public List<BuildTargetGroup> targets;
 		public DefineSymbolContext context;
 		public List<DefineSymbolPreset> presets;
 
 		public DefineSymbolData()
 		{
+			targets = new List<BuildTargetGroup>();
 			context = new DefineSymbolContext();
 			presets = new List<DefineSymbolPreset>();
 		}
@@ -83,6 +85,28 @@ namespace DefineSymbolEditor
 			catch (Exception)
 			{
 			}
+		}
+
+
+		//------------------------------------------------------
+		// preset
+		//------------------------------------------------------
+
+		public string GetPresetSymbols(string presetName, BuildTargetGroup targetGroup)
+		{
+			var preset = presets.Find(i => i.name == presetName);
+			if (preset == null) 
+				return string.Empty;
+			
+			var index = Array.FindIndex(preset.symbols, i => i.target == targetGroup);
+			if (index < 0)
+				return string.Empty;
+			
+			// プリセット保存時には有効だったプラットフォームが今は無効化されている事もある
+			if (!targets.Contains(targetGroup))
+				return string.Empty;
+
+			return preset.symbols[index].symbol;
 		}
 	}
 }

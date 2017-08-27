@@ -51,7 +51,7 @@ namespace DefineSymbolEditor
 			Context,
 		}
 
-		readonly BuildTargetGroup[] kTargets =
+		readonly BuildTargetGroup[] kTargets = 
 		{
 			BuildTargetGroup.Standalone,
 			BuildTargetGroup.iOS,
@@ -266,30 +266,53 @@ namespace DefineSymbolEditor
 
 				if (GUILayout.Button("Apply", kFooterBtnWidth))
 				{
-					if (m_mode == Mode.Context)
-					{
-						m_data.context = new DefineSymbolContext(m_context);
-						m_data.Save();
-						SetSymbolMode();
-					}
-					else
-					{
-						ApplySymbol();
-						Close();
-					}
+					OnApply();
 				}
 				if (GUILayout.Button("Revert", kFooterBtnWidth))
 				{
-					if (m_mode == Mode.Context)
-					{
-						m_context = new DefineSymbolContext(m_data.context);
-						SetSymbolMode();
-					}
-					else
-					{
-						Close();
-					}
+					OnRevert();
 				}
+			}
+		}
+
+		void OnApply()
+		{
+			if (m_mode == Mode.Context)
+			{
+				m_data.context = new DefineSymbolContext(m_context);
+				m_data.Save();
+				SetSymbolMode();
+			}
+			else
+			{
+				m_data.Save(); // m_data.targetsが変わってるかもしれない
+				foreach (var target in kTargets)
+				{
+					PlayerSettings.SetScriptingDefineSymbolsForGroup(target, GetScriptingDefineSymbols(target));
+				}
+				Close();
+			}
+		}
+
+		string GetScriptingDefineSymbols(BuildTargetGroup target)
+		{
+			if (!m_data.targets.Contains(target))
+				return string.Empty;
+
+			var index = Array.FindIndex(m_status, i => i.target == target);
+			return index >= 0 ? m_status[index].ToSymbol() : string.Empty;
+		}
+
+		void OnRevert()
+		{
+			if (m_mode == Mode.Context)
+			{
+				m_context = new DefineSymbolContext(m_data.context);
+				SetSymbolMode();
+			}
+			else
+			{
+				Close();
 			}
 		}
 
@@ -398,6 +421,28 @@ namespace DefineSymbolEditor
 			}
 
 			DrawBuildTargetIcon(itemPosition, index);
+
+			using (var check = new EditorGUI.ChangeCheckScope())
+			{
+				var togglePosition = new Rect(
+					itemPosition.xMax - 32f,
+					itemPosition.y + (itemPosition.height - 16f) * 0.5f,
+					16f, 16f);
+				
+				var selected = GUI.Toggle(togglePosition, m_data.targets.Contains(kTargets[index]), GUIContent.none);
+				if (check.changed)
+				{
+					if (selected)
+					{
+						m_data.targets.Add(kTargets[index]);
+						m_data.targets.Sort((x, y) => Array.IndexOf(kTargets, x).CompareTo(Array.IndexOf(kTargets, y)));
+					}
+					else
+					{
+						m_data.targets.Remove(kTargets[index]);
+					}
+				}
+			}
 		}
 
 		GUIStyleState GetStyleState(bool selected)
@@ -448,21 +493,22 @@ namespace DefineSymbolEditor
 			m_status = DefineSymbolStatus.Create(m_context, kTargets);
 		}
 
-		void ApplySymbol()
-		{
-			for (int i = 0; i < kTargets.Length; ++i)
-			{
-				PlayerSettings.SetScriptingDefineSymbolsForGroup(kTargets[i], m_status[i].ToSymbol());
-			}
-		}
-
 		void DrawSymbolMode()
 		{
+			var targetEnabled = m_data.targets.Contains(kTargets[m_targetIndex]);
+			GUI.enabled = targetEnabled;
+
 			GUILayout.Box(GUIContent.none, "Label", GUILayout.Height(32), GUILayout.ExpandWidth((true)));
 			DrawBuildTargetIcon(GUILayoutUtility.GetLastRect(), m_targetIndex);
 
 			EditorGUILayout.Space();
 			m_status[m_targetIndex].DrawEdit();
+
+			GUI.enabled = true;
+			if (!targetEnabled)
+			{
+				EditorGUILayout.HelpBox("このプラットフォームを有効にするにはチェックを入れてください", MessageType.Info);
+			}
 		}
 
 
