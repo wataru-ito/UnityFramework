@@ -4,32 +4,47 @@ using UnityEngine;
 
 namespace DefineSymbolEditor
 {
-	public class DefineSymbolPresetCreateWindow : EditorWindow
-	{
-		string m_name = "PRESET";
-		Action<string> m_callbackl;
-
-		public static DefineSymbolPresetCreateWindow Open(Action<string> callback)
-		{
-			var win = CreateInstance<DefineSymbolPresetCreateWindow>();
-			win.m_callbackl = callback;
-			win.Show(); //ShowPopup();
-			return win;
-		}
-
-		void OnGUI()
-		{
-			m_name  = EditorGUILayout.TextField("名前", m_name);
-			if (GUILayout.Button("決定"))
-			{
-				m_callbackl(m_name);
-				Close();
-			}
-		}
-	}
-
 	public class DefineSymbolEditorWindow : EditorWindow
 	{
+		class PresetCreateWindow : EditorWindow
+		{
+			string m_name = "PRESET";
+			Action<string> m_callbackl;
+
+			public static PresetCreateWindow Open(Action<string> callback)
+			{
+				var win = CreateInstance<PresetCreateWindow>();
+				win.m_callbackl = callback;
+				win.ShowAuxWindow();
+				return win;
+			}
+
+			void OnEnable()
+			{
+				titleContent = new GUIContent("プリセット作成");
+				minSize =
+				maxSize = new Vector2(250, 40);
+			}
+
+			void OnGUI()
+			{
+				EditorGUIUtility.labelWidth = 70f;
+				m_name = EditorGUILayout.TextField("プリセット名", m_name);
+				using (new EditorGUILayout.HorizontalScope())
+				{
+					if (GUILayout.Button("決定", "ButtonLeft"))
+					{
+						m_callbackl(m_name);
+						Close();
+					}
+					if (GUILayout.Button("戻る", "ButtonRight"))
+					{
+						Close();
+					}
+				}
+			}
+		}
+
 		enum Mode
 		{
 			Symbol,
@@ -87,7 +102,7 @@ namespace DefineSymbolEditor
 			if (s_instane) return;
 
 			s_instane = CreateInstance<DefineSymbolEditorWindow>();
-			s_instane.ShowAuxWindow();
+			s_instane.ShowUtility();
 		}
 
 
@@ -155,11 +170,12 @@ namespace DefineSymbolEditor
 		void DrawBuildTargetIcon(Rect itemPosition, int index)
 		{
 			var icon = itemPosition;
+			icon.x += 2;
 			icon.y += (icon.height - kTargetIconSize) * 0.5f;
 			icon.width = icon.height = kTargetIconSize;
 			GUI.DrawTexture(icon, m_targetIcons[index]);
 
-			itemPosition.x += icon.width + 4f;
+			itemPosition.x = icon.xMax + 4f;
 			itemPosition.y += (itemPosition.height - 16f) * 0.5f;
 			itemPosition.height = 16f;
 			GUI.Label(itemPosition, kTargets[index].ToString());
@@ -315,7 +331,7 @@ namespace DefineSymbolEditor
 				return;
 			}
 
-			DefineSymbolPresetCreateWindow.Open(name =>
+			PresetCreateWindow.Open(name =>
 			{
 				var preset = DefineSymbolPreset.Create(name, m_status);
 				m_data.presets.Add(preset);
@@ -348,10 +364,10 @@ namespace DefineSymbolEditor
 			m_buildTargetRect = GUILayoutUtility.GetLastRect();
 			m_buildTargetRect.x += 1f;
 			m_buildTargetRect.y += 1f;
-			m_buildTargetRect.width -= 2f;
-			m_buildTargetRect.height -= 2f;
+			m_buildTargetRect.width -= 1f;
+			m_buildTargetRect.height -= 1f;
 
-			var viewRect = new Rect(0, 0, m_buildTargetRect.width - 16f, kTargetItemHeight * kTargets.Length);
+			var viewRect = new Rect(0, 0, m_buildTargetRect.width - 14f, kTargetItemHeight * kTargets.Length);
 			using (var scroll = new GUI.ScrollViewScope(m_buildTargetRect, m_targetScrollPosition, viewRect))
 			{
 				for (int i = 0; i < kTargets.Length; ++i)
