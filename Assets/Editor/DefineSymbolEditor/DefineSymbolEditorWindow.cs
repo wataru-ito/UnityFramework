@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DefineSymbolEditor
 {
-	public class DefineSymbolEditorWindow : EditorWindow
+	class DefineSymbolEditorWindow : EditorWindow
 	{
 		class PresetCreateWindow : EditorWindow
 		{

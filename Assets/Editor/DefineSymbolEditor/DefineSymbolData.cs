@@ -4,7 +4,6 @@ using System.IO;
 using UnityEngine;
 using UnityEditor;
 
-
 namespace DefineSymbolEditor
 {
 	[Serializable]
@@ -84,23 +83,6 @@ namespace DefineSymbolEditor
 			catch (Exception)
 			{
 			}
-		}
-
-
-		//------------------------------------------------------
-		// Preset
-		//------------------------------------------------------
-
-		/// <returns>null:保存されてない string.Empty:見つかったけど空だっただけ</returns>
-		public static string GetScriptDefineSymbolPreset(string presetName, BuildTargetGroup targetGroup)
-		{
-			var data = Load();
-
-			var preset = data.presets.Find(i => i.name == presetName);
-			if (preset == null) return null;
-
-			var index = Array.FindIndex(preset.symbols, i => i.target == targetGroup);
-			return index >= 0 ? preset.symbols[index].symbol : null;
 		}
 	}
 }

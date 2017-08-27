@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 using UnityEditor;
 
@@ -158,6 +157,7 @@ namespace DefineSymbolEditor
 				(dropdown.individual ? indivisual : general).dropdowns.Add(dropdown);
 			}
 		}
+
 
 		//------------------------------------------------------
 		// gui
