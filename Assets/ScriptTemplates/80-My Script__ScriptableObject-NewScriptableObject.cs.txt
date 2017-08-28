@@ -1,0 +1,13 @@
+using UnityEngine;
+
+namespace Framework
+{
+	[CreateAssetMenu(menuName = "Framework/#SCRIPTNAME#")]
+	public class #SCRIPTNAME# : ScriptableObject
+	{
+		//------------------------------------------------------
+		// unity system function
+		//------------------------------------------------------
+				
+	}
+}
