@@ -1,12 +1,12 @@
 ﻿using System;
 using UnityEngine;
-using StateFunc = System.Action<Framework.FBFSM.Step>;
+using StateFunc = System.Action<Framework.FSM.FBFSM.Step>;
 
 /// <summary>
 /// 関数ベースの状態マシン
 /// (Function Based Finite State Machine)
 /// </summary>
-namespace Framework
+namespace Framework.FSM
 { 
 	public class FBFSM
 	{
