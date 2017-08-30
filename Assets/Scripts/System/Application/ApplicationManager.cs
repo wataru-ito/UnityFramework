@@ -34,5 +34,16 @@ namespace Framework
 		{
 			return m_setup;
 		}
+
+
+		//------------------------------------------------------
+		// events
+		//------------------------------------------------------
+
+		public void OnBackButtonDown()
+		{
+			Debug.Log("Quit Application");
+			Application.Quit();
+		}
 	}
 }
