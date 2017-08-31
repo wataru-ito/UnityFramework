@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Events;
 
 namespace Framework.BackEventNotice
@@ -7,7 +8,7 @@ namespace Framework.BackEventNotice
 	public class BackEventNotifier : MonoBehaviour
 	{
 		[SerializeField] UnityEvent m_onBackDefault;
-		List<BackEventReceiver> m_observers = new List<BackEventReceiver>();
+		List<BackEventListener> m_listeners = new List<BackEventListener>();
 
 
 		//------------------------------------------------------
@@ -33,7 +34,9 @@ namespace Framework.BackEventNotice
 
 		void Awake()
 		{
+			Assert.IsTrue(s_instance == null || s_instance == this, "BackEventNotifier alread exists.");
 			s_instance = this;
+			Debug.Log(name);
 		}
 
 		void OnDestroy()
@@ -58,14 +61,14 @@ namespace Framework.BackEventNotice
 		// observer
 		//------------------------------------------------------
 
-		internal void AddObserver(BackEventReceiver receiver)
+		internal void AddListener(BackEventListener listener)
 		{
-			m_observers.Add(receiver);
+			m_listeners.Add(listener);
 		}
 
-		internal void RemoveObserver(BackEventReceiver receiver)
+		internal void RemoveListener(BackEventListener listener)
 		{
-			m_observers.Remove(receiver);
+			m_listeners.Remove(listener);
 		}
 
 
@@ -77,13 +80,13 @@ namespace Framework.BackEventNotice
 		{
 			if (!enabled) return;
 
-			if (m_observers.Count == 0)
+			if (m_listeners.Count == 0)
 			{
 				m_onBackDefault.Invoke();
 				return;
 			}
 
-			var receiver = m_observers[m_observers.Count - 1];
+			var receiver = m_listeners[m_listeners.Count - 1];
 			receiver.Invoke();
 		}
 	}

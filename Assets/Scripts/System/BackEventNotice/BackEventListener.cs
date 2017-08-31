@@ -3,7 +3,7 @@ using UnityEngine.Events;
 
 namespace Framework.BackEventNotice
 {
-	public class BackEventReceiver : MonoBehaviour
+	public class BackEventListener : MonoBehaviour
 	{
 		[SerializeField] UnityEvent m_onBack;
 
@@ -14,12 +14,12 @@ namespace Framework.BackEventNotice
 
 		void OnEnable()
 		{
-			BackEventNotifier.Instance.AddObserver(this);
+			BackEventNotifier.Instance.AddListener(this);
 		}
 
 		void OnDisable()
 		{
-			BackEventNotifier.Instance.RemoveObserver(this);
+			BackEventNotifier.Instance.RemoveListener(this);
 		}
 
 
