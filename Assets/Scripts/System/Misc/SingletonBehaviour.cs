@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Framework
 {
@@ -32,11 +33,7 @@ namespace Framework
 
 		protected virtual void Awake()
 		{
-			if (s_instance)
-			{
-				Debug.LogWarningFormat("{0} already exists.", typeof(T).FullName);
-			}
-
+			Assert.IsTrue(s_instance == null || s_instance == this, typeof(T).FullName + " already exists.");
 			s_instance = this as T;
 		}
 
