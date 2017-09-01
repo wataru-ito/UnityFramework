@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
-
+using Framework.UI;
 
 namespace Framework.Game
 {
@@ -14,7 +14,11 @@ namespace Framework.Game
 		
 		public void OnBackButtonDown()
 		{
-			SceneManager.LoadScene(m_backSceneName);
+			if (MessageBox.Exists())
+				return;
+
+			MessageBox.YesNo("MENU", "タイトルに戻る",
+				yes: () => SceneManager.LoadScene(m_backSceneName));
 		}
 	}
 }

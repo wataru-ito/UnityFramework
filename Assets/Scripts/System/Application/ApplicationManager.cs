@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
+using Framework.UI;
+
 
 namespace Framework
 {
@@ -42,8 +44,10 @@ namespace Framework
 
 		public void OnBackButtonDown()
 		{
-			Debug.Log("Quit Application");
-			Application.Quit();
+			if (MessageBox.Exists()) 
+				return;
+
+			MessageBox.YesNo("Game", "ゲームを終了する", yes:Application.Quit);
 		}
 	}
 }

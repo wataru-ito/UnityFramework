@@ -82,6 +82,7 @@ namespace Framework.UI
 
 			s_instance = this;
 			m_animator = GetComponent<Animator>();
+			m_animator.Update(0f);
 		}
 
 		void Start()
