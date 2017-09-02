@@ -1,4 +1,5 @@
-﻿// UNIBOOK 総集編 アセット編 (https://unity-bu.booth.pm/items/392553) より
+﻿// GitHub : https://github.com/anchan828/custom-asset
+// MIT License
 using System;
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
