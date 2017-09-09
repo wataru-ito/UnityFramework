@@ -8,8 +8,6 @@ namespace Framework.DebugSystem
 	public class DebugManager : MonoBehaviour
 	{
 		const float kDebugWindowDuration = 3f;
-
-		[SerializeField] GameObject m_debugMenuWindowPrefab;
 		DebugMenuWindow m_debugMenu;
 		float m_presstime;
 
@@ -57,7 +55,7 @@ namespace Framework.DebugSystem
 			#if UNITY_EDITOR
 			if (Input.GetKeyDown(KeyCode.D))
 			{
-				m_debugMenu = DebugMenuWindow.Create(m_debugMenuWindowPrefab);
+				m_debugMenu = DebugMenuWindow.Create();
 				return;
 			}
 			#endif
@@ -67,7 +65,7 @@ namespace Framework.DebugSystem
 				m_presstime += Time.deltaTime;
 				if (m_presstime >= kDebugWindowDuration)
 				{
-					m_debugMenu = DebugMenuWindow.Create(m_debugMenuWindowPrefab);
+					m_debugMenu = DebugMenuWindow.Create();
 					return;
 				}
 			}

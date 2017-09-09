@@ -1,6 +1,6 @@
 ﻿#if DEBUG
-using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace DebugMenuSystem
 {
@@ -14,10 +14,31 @@ namespace DebugMenuSystem
 		// static function
 		//------------------------------------------------------
 
-		public static DebugMenuWindow Create(GameObject prefab)
+		public static DebugMenuWindow Create()
 		{
-			var go = Instantiate(prefab) as GameObject;
+			var go = new GameObject("DebugMenuWindow", 
+				typeof(DebugMenuWindow),
+				typeof(Canvas),
+				typeof(GraphicRaycaster));
 			go.hideFlags |= HideFlags.DontSave;
+			DontDestroyOnLoad(go);
+
+			// UIのタッチイベントを塞ぐ
+			var canvas = go.GetComponent<Canvas>();
+			canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+			canvas.sortingOrder = short.MaxValue;
+
+			var touchGuard = new GameObject("TouchGuard", typeof(Image));
+
+			var rectTrans = touchGuard.GetComponent<RectTransform>();
+			rectTrans.SetParent(go.transform);
+			rectTrans.anchorMin = Vector2.zero;
+			rectTrans.anchorMax = Vector2.one;
+			rectTrans.anchoredPosition = Vector2.zero;
+			rectTrans.sizeDelta = Vector2.zero;
+
+			var image = touchGuard.GetComponent<Image>();
+			image.color = Color.clear;
 
 			return go.GetComponent<DebugMenuWindow>();
 		}

@@ -60,10 +60,10 @@ namespace DebugMenuSystem
 	public class DebugMenuToggle : DebugMenuItem
 	{
 		string[] m_labels; // 0:OFF 1:ON
-		Action<bool> m_setter;
 		Func<bool> m_getter;
+		Action<bool> m_setter;
 
-		public DebugMenuToggle(string path, Action<bool> setter, Func<bool> getter, params string[] labels)
+		public DebugMenuToggle(string path, Func<bool> getter, Action<bool> setter, params string[] labels)
 			: base(path)
 		{
 			m_labels = new string[2]
@@ -71,8 +71,8 @@ namespace DebugMenuSystem
 				labels.Length > 0 ? labels[0] : "OFF",
 				labels.Length > 1 ? labels[1] : "ON",
 			};
-			m_setter = setter;
 			m_getter = getter;
+			m_setter = setter;
 		}
 
 		public override void OnGUI()
