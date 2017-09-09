@@ -7,47 +7,20 @@ using UnityEditor;
 namespace DefineSymbolEditor
 {
 	[Serializable]
-	class DefineSymbolPreset
-	{
-		[Serializable]
-		public struct Symbol
-		{
-			public BuildTargetGroup target;
-			public string symbol;
-		}
-
-		public string name;
-		public Symbol[] symbols;
-
-		public static DefineSymbolPreset Create(string name, DefineSymbolStatus[] status)
-		{
-			var preset = new DefineSymbolPreset();
-			preset.name = name;
-			preset.symbols = Array.ConvertAll(status, i => new Symbol { target = i.target, symbol = i.ToSymbol() });
-			return preset;
-		}
-
-		public string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup)
-		{
-			var index = Array.FindIndex(symbols, i => i.target == targetGroup);
-			return index >= 0 ? symbols[index].symbol : string.Empty;
-		}
-	}
-
-
-	[Serializable]
 	class DefineSymbolData
 	{
 		const string kFilePath = "ProjectSettings/DefineSymbolEditor.txt";
 
 		public List<BuildTargetGroup> targets;
 		public DefineSymbolContext context;
+		public string commonSymbols;
 		public List<DefineSymbolPreset> presets;
 
 		public DefineSymbolData()
 		{
 			targets = new List<BuildTargetGroup>();
 			context = new DefineSymbolContext();
+			commonSymbols = string.Empty;
 			presets = new List<DefineSymbolPreset>();
 		}
 

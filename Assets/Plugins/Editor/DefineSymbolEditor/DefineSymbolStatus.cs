@@ -5,113 +5,70 @@ using UnityEditor;
 
 namespace DefineSymbolEditor
 {
+	/// <summary>
+	/// 編集用のデータ
+	/// </summary>
 	class DefineSymbolStatus
 	{
-		interface IStatus
+		public class Toggle
 		{
-			void DrawEdit();
-			string ToSymbol();
-		}
-
-		class ToggleStatus : IStatus
-		{
-			public readonly DefineSymbolContext.Toggle toggle;
+			public readonly DefineSymbolContext.Toggle context;
 			public bool enabled;
 
-			public ToggleStatus(DefineSymbolContext.Toggle toggle, string[] symbols)
+			public Toggle(DefineSymbolContext.Toggle context, string[] symbols)
 			{
-				this.toggle = toggle;
-				enabled = Array.IndexOf(symbols, toggle.name) >= 0;
+				this.context = context;
+				enabled = Array.IndexOf(symbols, context.name) >= 0;
 			}
 
-			public void DrawEdit()
+			public override string ToString()
 			{
-				enabled = EditorGUILayout.Toggle(toggle.content, enabled);
-			}
-
-			public string ToSymbol()
-			{
-				return enabled ? toggle.name : string.Empty;
+				return enabled ? context.name : string.Empty;
 			}
 		}
 
-		class DropdownStatus : IStatus
+		public class Dropdown
 		{
-			public readonly DefineSymbolContext.Dropdown dropdown;
+			public readonly DefineSymbolContext.Dropdown context;
 			public int index;
 
-			public DropdownStatus(DefineSymbolContext.Dropdown dropdown, string[] symbols)
+			public Dropdown(DefineSymbolContext.Dropdown context, string[] symbols)
 			{
-				this.dropdown = dropdown;
+				this.context = context;
 				index = -1;
 
-				var symbolIndex = Array.FindIndex(symbols, i => i.StartsWith(dropdown.name));
+				var symbolIndex = Array.FindIndex(symbols, i => i.StartsWith(context.name));
 				if (symbolIndex >= 0)
 				{
-					var itemName = symbols[symbolIndex].Substring(dropdown.name.Length + 1);
-					index = dropdown.items.IndexOf(itemName);
+					var itemName = symbols[symbolIndex].Substring(context.name.Length + 1);
+					index = context.items.IndexOf(itemName);
 				}
 			}
 
-			public void DrawEdit()
+			public override string ToString()
 			{
-				index = EditorGUILayout.Popup(dropdown.content, index, dropdown.displayedOptions);
-			}
-
-			public string ToSymbol()
-			{
-				return index >= 0 ? string.Format("{0}_{1}", dropdown.name, dropdown.items[index]) : string.Empty;
+				return index >= 0 ? string.Format("{0}_{1}", context.name, context.items[index]) : string.Empty;
 			}
 		}
 
-		public BuildTargetGroup target;
-		DefineSymbolStatus m_common;
-		List<ToggleStatus> m_toggles;
-		List<DropdownStatus> m_dropdowns;
+		public readonly BuildTargetGroup target;
+		public DefineSymbolStatus common;
+		public List<Toggle> toggles;
+		public List<Dropdown> dropdowns;
 
 
 		//------------------------------------------------------
-		// static function
+		// factory
 		//------------------------------------------------------
 
-		public static DefineSymbolStatus[] Create(DefineSymbolContext context, BuildTargetGroup[] targets)
-		{
-			DefineSymbolContext commonContext, indivisualContext;
-			context.Split(out commonContext, out indivisualContext);
-
-			var commonStatus = new DefineSymbolStatus(BuildTargetGroup.Unknown, null, commonContext,
-				PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone));
-
-			return Array.ConvertAll(targets, i =>
-			{
-				return new DefineSymbolStatus(i, commonStatus, indivisualContext,
-					PlayerSettings.GetScriptingDefineSymbolsForGroup(i));
-			});
-		}
-
-		public static DefineSymbolStatus[] Create(DefineSymbolContext context, BuildTargetGroup[] targets, DefineSymbolPreset preset)
-		{
-			DefineSymbolContext commonContext, indivisualContext;
-			context.Split(out commonContext, out indivisualContext);
-
-			var commonStatus = new DefineSymbolStatus(BuildTargetGroup.Unknown, null, commonContext,
-				PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone));
-
-			return Array.ConvertAll(targets, i =>
-			{
-				return new DefineSymbolStatus(i, commonStatus, indivisualContext,
-					preset.GetScriptingDefineSymbolsForGroup(i));
-			});
-		}
-
-		DefineSymbolStatus(BuildTargetGroup target, DefineSymbolStatus common, DefineSymbolContext context, string symbol)
+		public DefineSymbolStatus(BuildTargetGroup target, DefineSymbolStatus common, DefineSymbolContext context, string symbol)
 		{
 			this.target = target;
-			m_common = common;
+			this.common = common;
 
 			var symbols = symbol.Split(';');
-			m_toggles = context.toggles.ConvertAll(i => new ToggleStatus(i, symbols));
-			m_dropdowns = context.dropdowns.ConvertAll(i => new DropdownStatus(i, symbols));
+			toggles = context.toggles.ConvertAll(i => new Toggle(i, symbols));
+			dropdowns = context.dropdowns.ConvertAll(i => new Dropdown(i, symbols));
 		}
 
 
@@ -119,41 +76,28 @@ namespace DefineSymbolEditor
 		// accessor
 		//------------------------------------------------------
 
-		public void DrawEdit()
-		{
-			if (m_common != null)
-			{
-				EditorGUILayout.LabelField("共通");
-				m_common.DrawEdit();
-				EditorGUILayout.Space();
-			}
-
-			m_toggles.ForEach(i => i.DrawEdit());
-			m_dropdowns.ForEach(i => i.DrawEdit());
-		}
-
-		public string ToSymbol()
+		public string ToSymbols()
 		{
 			var sb = new StringBuilder();
 
-			if (m_common != null)
+			if (common != null)
 			{
-				CollectSymbol(sb, m_common.m_toggles);
-				CollectSymbol(sb, m_common.m_dropdowns);
+				CollectSymbol(sb, common.toggles);
+				CollectSymbol(sb, common.dropdowns);
 			}
 
-			CollectSymbol(sb, m_toggles);
-			CollectSymbol(sb, m_dropdowns);
+			CollectSymbol(sb, toggles);
+			CollectSymbol(sb, dropdowns);
 
 			return sb.ToString();
 		}
 
 		static void CollectSymbol<T>(StringBuilder sb, List<T> stateList) 
-			where T : IStatus
+			where T : class
 		{
 			foreach (var state in stateList)
 			{
-				var symbol = state.ToSymbol();
+				var symbol = state.ToString();
 				if (!string.IsNullOrEmpty(symbol))
 				{
 					if (sb.Length > 0) sb.Append(";");

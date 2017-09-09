@@ -5,11 +5,12 @@ using UnityEditor;
 
 namespace DefineSymbolEditor
 {
+	/// <summary>
+	/// シンボルの設定項目情報
+	/// </summary>
 	[Serializable]
 	class DefineSymbolContext
 	{
-		const float kBtnWidth = 38f;
-
 		[Serializable]
 		public class Symbol
 		{
@@ -30,20 +31,6 @@ namespace DefineSymbolEditor
 			public GUIContent content
 			{
 				get { return new GUIContent(name, description); }
-			}
-
-			public virtual bool DrawEdit()
-			{
-				var deleteFlag = false;
-				using (new EditorGUILayout.HorizontalScope())
-				{
-					name = EditorGUILayout.TextField("名前", name);
-					deleteFlag = GUILayout.Button("削除", EditorStyles.miniButton, GUILayout.Width(kBtnWidth));
-				}
-				description = EditorGUILayout.TextField("説明", description);
-				individual = EditorGUILayout.Toggle("Platform別", individual);
-
-				return deleteFlag;
 			}
 		}
 
@@ -86,37 +73,6 @@ namespace DefineSymbolEditor
 					return array;
 				}
 			}
-
-			public override bool DrawEdit()
-			{
-				var deleteFlg = base.DrawEdit();
-				++EditorGUI.indentLevel;
-
-				for (int j = 0; j < items.Count; ++j)
-				{
-					using (new EditorGUILayout.HorizontalScope())
-					{
-						items[j] = EditorGUILayout.TextField(items[j]);
-						if (GUILayout.Button("削除", EditorStyles.miniButton, GUILayout.Width(kBtnWidth)))
-						{
-							items.RemoveAt(j--);
-						}
-					}
-				}
-
-				using (new EditorGUILayout.HorizontalScope())
-				{
-					GUILayout.FlexibleSpace();
-					if (GUILayout.Button("選択追加"))
-					{
-						items.Add("ITEM" + items.Count);
-					}
-				}
-
-				--EditorGUI.indentLevel;
-
-				return deleteFlg;
-			}
 		}
 
 		public List<Toggle> toggles;
@@ -142,79 +98,20 @@ namespace DefineSymbolEditor
 			src.dropdowns.ForEach(i => dropdowns.Add(new Dropdown(i)));
 		}
 
-		public void Split(out DefineSymbolContext general, out DefineSymbolContext indivisual)
+		public void Split(out DefineSymbolContext common, out DefineSymbolContext indivisual)
 		{
-			general = new DefineSymbolContext();
+			common = new DefineSymbolContext();
 			indivisual = new DefineSymbolContext();
 
 			foreach (var toggle in toggles)
 			{
-				(toggle.individual ? indivisual : general).toggles.Add(toggle);
+				(toggle.individual ? indivisual : common).toggles.Add(toggle);
 			}
 
 			foreach (var dropdown in dropdowns)
 			{
-				(dropdown.individual ? indivisual : general).dropdowns.Add(dropdown);
+				(dropdown.individual ? indivisual : common).dropdowns.Add(dropdown);
 			}
-		}
-
-
-		//------------------------------------------------------
-		// gui
-		//------------------------------------------------------
-
-		public void DrawEdit()
-		{
-			var prev = EditorGUIUtility.labelWidth;
-			EditorGUIUtility.labelWidth = 80f;
-
-			DrawEdit("Toggle", toggles, CreateToggle);
-			DrawEdit("Dropdown", dropdowns, CreateDropdown);
-
-			EditorGUIUtility.labelWidth = prev;
-		}
-
-		void DrawEdit<T>(string label, List<T> list, Func<T> createInstance)
-			where T : Symbol
-		{
-			EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
-			for (int i = 0; i < list.Count; ++i)
-			{
-				using (new EditorGUILayout.VerticalScope("box"))
-				{
-					var deleteFlag = list[i].DrawEdit();
-					if (deleteFlag)
-					{
-						list.RemoveAt(i--);
-					}
-				}
-			}
-
-			using (new EditorGUILayout.HorizontalScope())
-			{
-				GUILayout.FlexibleSpace();
-				if (GUILayout.Button("定義追加"))
-				{
-					list.Add(createInstance());
-				}
-			}
-		}
-
-		Toggle CreateToggle()
-		{
-			var toggle = new Toggle();
-			toggle.name = "TOGGLE" + toggles.Count;
-			toggle.description = string.Empty;
-			return toggle;
-		}
-
-		Dropdown CreateDropdown()
-		{
-			var dropdown = new Dropdown();
-			dropdown.name = "DROPDOWN" + dropdowns.Count;
-			dropdown.description = string.Empty;
-			dropdown.items.Add("ITEM0");
-			return dropdown;
 		}
 	}
 }
