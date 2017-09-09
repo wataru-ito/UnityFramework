@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using Framework.UI;
-
+using Framework.DebugSystem;
 
 namespace Framework
 {
@@ -23,6 +23,10 @@ namespace Framework
 
 		IEnumerator Start()
 		{
+			#if DEBUG
+			DebugManager.Create(transform);
+			#endif
+
 			m_setup = true;
 			yield break;
 		}

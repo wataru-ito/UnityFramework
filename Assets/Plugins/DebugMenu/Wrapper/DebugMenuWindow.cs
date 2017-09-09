@@ -1,4 +1,5 @@
 ﻿#if DEBUG
+using System;
 using UnityEngine;
 
 namespace DebugMenuSystem
@@ -9,29 +10,16 @@ namespace DebugMenuSystem
 	/// </summary>
 	public class DebugMenuWindow : MonoBehaviour
 	{
-		Object m_destroyTarget;
-
 		//------------------------------------------------------
 		// static function
 		//------------------------------------------------------
 
-		public static DebugMenuWindow Open(GameObject owner = null)
+		public static DebugMenuWindow Create(GameObject prefab)
 		{
-			if (owner)
-			{
-				var win = owner.AddComponent<DebugMenuWindow>();
-				win.m_destroyTarget = win;
-				return win;
-			}
-			else
-			{
-				var go = new GameObject("DebugMenuWindow");
-				go.hideFlags |= HideFlags.DontSave;
+			var go = Instantiate(prefab) as GameObject;
+			go.hideFlags |= HideFlags.DontSave;
 
-				var win = go.AddComponent<DebugMenuWindow>();
-				win.m_destroyTarget = go;
-				return win;
-			}
+			return go.GetComponent<DebugMenuWindow>();
 		}
 
 
@@ -51,7 +39,7 @@ namespace DebugMenuSystem
 
 		public void Close()
 		{
-			Destroy(m_destroyTarget);
+			Destroy(gameObject);
 		}
 	}
 }
