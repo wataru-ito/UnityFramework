@@ -17,6 +17,7 @@ namespace SceneMenu
 			"階層",
 		};
 
+		SceneMenuSettings m_origin;
 		SceneMenuSettings m_settings;
 
 		GUIStyle m_labelStyle;
@@ -32,10 +33,18 @@ namespace SceneMenu
 		// static function
 		//------------------------------------------------------
 
+		static SceneMenuSettingsWindow s_intance;
+
 		[MenuItem("Scene/設定", false, 0)]
 		public static SceneMenuSettingsWindow Open()
 		{
-			return GetWindow<SceneMenuSettingsWindow>();
+			if (!s_intance)
+			{
+				s_intance = CreateInstance<SceneMenuSettingsWindow>();
+				s_intance.ShowUtility();
+			}
+
+			return s_intance;
 		}
 
 
@@ -45,6 +54,11 @@ namespace SceneMenu
 
 		void OnEnable()
 		{
+			s_intance = this; // 表示状態で生成モード切替挟んだ時の対応
+
+			titleContent = new GUIContent("SceneMenu設定");
+
+			m_origin = SceneMenuSettings.Load();
 			Revert();
 		}
 
@@ -267,31 +281,26 @@ namespace SceneMenu
 
 		void Apply()
 		{
-			var original = SceneMenuSettings.Load();
-			if (m_settings.outputDirectoryPath != original.outputDirectoryPath)
+			if (m_settings.Save())
 			{
-				var filePath = original.GetScriptPath();
-				if (File.Exists(filePath))
+				if (m_settings.outputDirectoryPath != m_origin.outputDirectoryPath)
 				{
-					File.Delete(filePath);
+					var filePath = m_origin.GetScriptPath();
+					if (File.Exists(filePath))
+					{
+						File.Delete(filePath);
+					}
 				}
-			}
 
-			original.CopyFrom(m_settings);
-			original.Save();
+				m_origin = new SceneMenuSettings(m_settings);
+			}
 
 			SceneMenuUpdater.GenerateSceneMenu();
 		}
 
 		void Revert()
 		{
-			if (m_settings)
-			{
-				DestroyImmediate(m_settings, true);
-			}
-
-			m_settings = ScriptableObject.CreateInstance<SceneMenuSettings>();
-			m_settings.CopyFrom(SceneMenuSettings.Load());
+			m_settings = new SceneMenuSettings(m_origin);
 			m_current = GetList();
 
 			if (!string.IsNullOrEmpty(m_settings.outputDirectoryPath))
