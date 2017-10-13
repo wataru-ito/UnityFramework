@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace Framework.VFX
 {
+	/// <summary>
+	/// Faderが使うカメラはenabled制御されるので何も映さないフェーダー用のカメラ
+	/// </summary>
 	[RequireComponent(typeof(Camera))]
 	public class Fader : SingletonBehaviour<Fader>
 	{
@@ -18,6 +21,7 @@ namespace Framework.VFX
 		[SerializeField] ColorType m_colorType;
 		[SerializeField, Range(0,1)] float m_thickness;
 
+		Camera m_camera;
 		Material m_materialInstance;
 		int m_thicknessId;
 
@@ -31,7 +35,8 @@ namespace Framework.VFX
 		protected override void Awake()
 		{
 			base.Awake();
-			
+
+			m_camera = GetComponent<Camera>();
 			m_materialInstance = Instantiate<Material>(m_material);
 			m_thicknessId = Shader.PropertyToID("_Thickness");
 			SetColor(m_colorType);
@@ -124,7 +129,7 @@ namespace Framework.VFX
 				m_colorType == ColorType.White ? value : 1 - value);
 
 			// 透明は無駄から寝ちゃおうかな...
-			enabled = !Mathf.Approximately(value, 0);
+			m_camera.enabled = !Mathf.Approximately(value, 0);
 		}
 
 		void StopIntepolate()
@@ -144,6 +149,20 @@ namespace Framework.VFX
 				t += Time.deltaTime;
 				SetThickness(Mathf.Lerp(from, to, t / duration));
 				yield return null;
+			}
+		}
+
+		//------------------------------------------------------
+		// camera
+		// Runtimeでカメラの深度変えたい時のために一応
+		//------------------------------------------------------
+
+		public float depth
+		{
+			get { return m_camera.depth; }
+			set
+			{
+				m_camera.depth = value;
 			}
 		}
 
