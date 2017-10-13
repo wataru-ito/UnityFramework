@@ -19,7 +19,10 @@ namespace Framework.BackEventNotice
 
 		void OnDisable()
 		{
-			BackEventNotifier.Instance.RemoveListener(this);
+			if (BackEventNotifier.Instance)
+			{
+				BackEventNotifier.Instance.RemoveListener(this);
+			}
 		}
 
 
