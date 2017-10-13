@@ -37,7 +37,7 @@ namespace Framework
 			s_instance = this as T;
 		}
 
-		protected virtual void OnDestory()
+		protected virtual void OnDestroy()
 		{
 			if (s_instance == this)
 			{
