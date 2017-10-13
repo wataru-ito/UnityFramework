@@ -35,6 +35,7 @@ namespace Framework.VFX
 			m_materialInstance = Instantiate<Material>(m_material);
 			m_thicknessId = Shader.PropertyToID("_Thickness");
 			SetColor(m_colorType);
+			SetThickness(m_thickness);
 		}
 
 		void OnDisable()
@@ -121,6 +122,9 @@ namespace Framework.VFX
 			// シェーダーで１つの引き算を削減するためにここで計算
 			m_materialInstance.SetFloat(m_thicknessId, 
 				m_colorType == ColorType.White ? value : 1 - value);
+
+			// 透明は無駄から寝ちゃおうかな...
+			enabled = !Mathf.Approximately(value, 0);
 		}
 
 		void StopIntepolate()
@@ -149,6 +153,16 @@ namespace Framework.VFX
 		//------------------------------------------------------
 #if UNITY_EDITOR
 
+		void Reset()
+		{
+			var GUIDs = UnityEditor.AssetDatabase.FindAssets("Fader t:Material");
+			if (GUIDs.Length > 0)
+			{
+				m_material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(
+					UnityEditor.AssetDatabase.GUIDToAssetPath(GUIDs[0]));
+			}
+		}
+
 		void OnValidate()
 		{
 			if (m_materialInstance)
@@ -158,6 +172,6 @@ namespace Framework.VFX
 			}			
 		}
 
-		#endif
+#endif
 	}
 }
