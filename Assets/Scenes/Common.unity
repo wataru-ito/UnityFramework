@@ -164,7 +164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1bcfeb07f2ffb64e8cb910ef568d60d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_color: 0
+  m_color: {r: 0, g: 0, b: 0, a: 0}
   m_duration: 0.3
   m_fader: {fileID: 329798171}
 --- !u!1 &329798169
@@ -209,8 +209,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_material: {fileID: 2100000, guid: c335e0b9c88045e4fab61fafb634c37d, type: 2}
-  m_colorType: 0
+  m_color: {r: 1, g: 1, b: 1, a: 0}
   m_thickness: 0
+  m_sleepWithCamera: 1
 --- !u!20 &329798172
 Camera:
   m_ObjectHideFlags: 0

@@ -10,20 +10,14 @@ namespace Framework.VFX
 	[RequireComponent(typeof(Camera))]
 	public class Fader : SingletonBehaviour<Fader>
 	{
-		const string kWhiteKeyword = "WHITE";
-
-		public enum ColorType
-		{
-			White,
-			Black,
-		}
-
 		[SerializeField] Material m_material;
-		[SerializeField] ColorType m_colorType;
+		[SerializeField] Color m_color;
 		[SerializeField, Range(0,1)] float m_thickness;
+		[SerializeField] bool m_sleepWithCamera;
 
 		Camera m_camera;
 		Material m_materialInstance;
+		int m_colorId;
 		int m_thicknessId;
 
 		Coroutine m_coroutine;
@@ -39,8 +33,9 @@ namespace Framework.VFX
 
 			m_camera = GetComponent<Camera>();
 			m_materialInstance = Instantiate<Material>(m_material);
+			m_colorId = Shader.PropertyToID("_Color");
 			m_thicknessId = Shader.PropertyToID("_Thickness");
-			SetColor(m_colorType);
+			SetColor(m_color);
 			SetThickness(m_thickness);
 		}
 
@@ -70,12 +65,12 @@ namespace Framework.VFX
 		// 色
 		//------------------------------------------------------
 
-		public ColorType colorType
+		public Color color
 		{
-			get { return m_colorType; }
+			get { return m_color; }
 			set
 			{
-				if (m_colorType != value)
+				if (m_color != value)
 				{
 					SetColor(value);
 					SetThickness(m_thickness);
@@ -83,17 +78,10 @@ namespace Framework.VFX
 			}
 		}
 
-		void SetColor(ColorType colorType)
+		void SetColor(Color color)
 		{
-			m_colorType = colorType;
-			if (m_colorType == ColorType.White)
-			{
-				m_materialInstance.EnableKeyword(kWhiteKeyword);
-			}
-			else
-			{
-				m_materialInstance.DisableKeyword(kWhiteKeyword);
-			}
+			m_color = color;
+			m_materialInstance.SetColor(m_colorId, m_color);
 		}
 
 
@@ -130,13 +118,12 @@ namespace Framework.VFX
 		void SetThickness(float value)
 		{
 			m_thickness = value;
+			m_materialInstance.SetFloat(m_thicknessId, m_thickness);
 
-			// シェーダーで１つの引き算を削減するためにここで計算
-			m_materialInstance.SetFloat(m_thicknessId, 
-				m_colorType == ColorType.White ? value : 1 - value);
-
-			// 透明は無駄から寝ちゃおうかな...
-			m_camera.enabled = !Mathf.Approximately(value, 0);
+			// 透明は無駄なので寝とく
+			var sleep = Mathf.Approximately(value, 0);
+			enabled = m_sleepWithCamera || !sleep; 
+			m_camera.enabled = !m_sleepWithCamera || !sleep;
 		}
 
 		void StopIntepolate()
@@ -207,7 +194,7 @@ namespace Framework.VFX
 		{
 			if (m_materialInstance)
 			{
-				SetColor(m_colorType);
+				SetColor(m_color);
 				SetThickness(m_thickness);
 			}			
 		}

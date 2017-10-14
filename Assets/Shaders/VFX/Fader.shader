@@ -3,6 +3,7 @@
 	Properties
 	{
 		_MainTex ("Texture", 2D) = "white" {}
+		_Color ("Main Color", Color) = (1,1,1,1)
 		_Thickness ("Thickness", Range(0,1)) = 0
 	}
 	
@@ -16,7 +17,6 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
-			#pragma shader_feature WHITE
 			
 			#include "UnityCG.cginc"
 
@@ -41,16 +41,13 @@
 			}
 			
 			sampler2D _MainTex;
+			fixed4 _Color;
 			float _Thickness;
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
 				fixed4 col = tex2D(_MainTex, i.uv);
-				#if WHITE
-				return col + (1 - col) * _Thickness;
-				#else
-				return col * _Thickness;
-				#endif
+				return lerp(col, _Color, _Thickness);
 			}
 			ENDCG
 		}
