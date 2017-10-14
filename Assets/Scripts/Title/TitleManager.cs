@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
-using UnityEngine.SceneManagement;
 
 
 namespace Framework.Title
 {
-	public class TitleManager : MonoBehaviour
+	public class TitleManager : SceneManagement.SceneBehaviour
 	{
 		[SerializeField, SceneName] string m_nextSceneName;
 
@@ -14,7 +13,7 @@ namespace Framework.Title
 
 		public void OnStartButtonDown()
 		{
-			SceneManager.LoadScene(m_nextSceneName);
+			SceneManagement.SceneManager.LoadScene(m_nextSceneName);
 		}
 	}
 }

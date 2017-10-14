@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using EndCallback = System.Action;
 
 namespace Framework.VFX
 {
@@ -114,10 +115,16 @@ namespace Framework.VFX
 			}
 		}
 
-		public void SetThickness(float value, float duration)
+		public void SetThickness(float from, float to, float duration, EndCallback onEnded = null)
 		{
 			StopIntepolate();
-			m_coroutine = StartCoroutine(yInterpolate(m_thickness, value, duration));
+			m_coroutine = StartCoroutine(yInterpolate(from, to, duration, onEnded));
+		}
+
+		public void SetThickness(float to, float duration, EndCallback onEnded = null)
+		{
+			StopIntepolate();
+			m_coroutine = StartCoroutine(yInterpolate(m_thickness, to, duration, onEnded));
 		}
 
 		void SetThickness(float value)
@@ -141,7 +148,7 @@ namespace Framework.VFX
 			}
 		}
 		
-		IEnumerator yInterpolate(float from, float to, float duration)
+		IEnumerator yInterpolate(float from, float to, float duration, EndCallback onEnded)
 		{
 			float t = 0;
 			while (t < duration)
@@ -150,7 +157,21 @@ namespace Framework.VFX
 				SetThickness(Mathf.Lerp(from, to, t / duration));
 				yield return null;
 			}
+
+			SetThickness(to);
+			m_coroutine = null;
+
+			if (onEnded != null)
+			{
+				onEnded();
+			}
 		}
+
+		public bool IsInterpolating
+		{
+			get{ return m_coroutine != null; }
+		}
+
 
 		//------------------------------------------------------
 		// camera
