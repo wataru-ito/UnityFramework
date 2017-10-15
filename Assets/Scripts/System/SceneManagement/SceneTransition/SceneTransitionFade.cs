@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace Framework.SceneManagement
 {
@@ -22,21 +23,18 @@ namespace Framework.SceneManagement
 		// ISceneTransition
 		//------------------------------------------------------
 
-		public override void Enter()
+		public override IEnumerator Enter()
 		{
 			m_fader.color = m_color;
 			m_fader.SetThickness(1f, m_duration);
+			return new WaitWhile(() => m_fader.IsInterpolating);
 		}
 
-		public override void Exit()
+		public override IEnumerator Exit()
 		{
 			m_fader.color = m_color;
 			m_fader.SetThickness(1f, 0f, m_duration);
-		}
-
-		public override bool IsTransiting
-		{
-			get { return m_fader.IsInterpolating; }
+			return new WaitWhile(() => m_fader.IsInterpolating);
 		}
 	}
 }

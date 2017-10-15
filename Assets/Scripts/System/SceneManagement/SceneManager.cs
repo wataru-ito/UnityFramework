@@ -1,18 +1,17 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using PreloadProcess = System.Func<string, System.Collections.IEnumerator>;
 
 namespace Framework.SceneManagement
 {
 	public interface ISceneManagementHandler
 	{
+		IEnumerator OnLoadPreprocess(string sceneName);
 		void OnLoadBegan(string sceneName);
 		void OnLoadEnded(string sceneName);
 	}
 
 
-	public class SceneManager : SingletonBehaviour<SceneManager>
+	public sealed class SceneManager : SingletonBehaviour<SceneManager>
 	{
 		[SerializeField, SceneName] string m_defaultSceneName;
 		[SerializeField] SceneTransition[] m_transitions;
@@ -20,37 +19,17 @@ namespace Framework.SceneManagement
 		bool m_isLoading;
 		SceneBehaviour m_current;
 
-		PreloadProcess m_preloadProcess;
-		List<ISceneManagementHandler> m_listeners = new List<ISceneManagementHandler>();
-
-
-		//------------------------------------------------------
-		// event listener
-		//------------------------------------------------------
-
-		public static void Subscribe(ISceneManagementHandler listener)
-		{
-			instance.m_listeners.Add(listener);
-		}
-
-		public static void Unsubscribe(ISceneManagementHandler listener)
-		{
-			if (s_instance)
-			{
-				s_instance.m_listeners.Remove(listener);
-			}
-		}
+		ISceneManagementHandler m_handler;
 
 
 		//------------------------------------------------------
 		// settings
 		//------------------------------------------------------
 
-		public void SetPreloadProcess(PreloadProcess preloadProcess)
+		public void SetHandler(ISceneManagementHandler handler)
 		{
-			m_preloadProcess = preloadProcess;
+			m_handler = handler;
 		}
-
 
 
 		//------------------------------------------------------
@@ -83,17 +62,19 @@ namespace Framework.SceneManagement
 		IEnumerator yLoadScene(string sceneName, SceneTransition transition)
 		{
 			m_isLoading = true;
-			m_listeners.ForEach(i => i.OnLoadBegan(sceneName));
+			if (m_handler != null)
+			{
+				m_handler.OnLoadBegan(sceneName);
+			}
 
 			if (transition != null)
 			{
-				transition.Enter();
-				yield return new WaitWhile(() => transition.IsTransiting);
+				yield return transition.Enter();
 			}
 
-			if (m_preloadProcess != null)
+			if (m_handler != null)
 			{
-				var process = m_preloadProcess(sceneName);
+				var process = m_handler.OnLoadPreprocess(sceneName);
 				if (process != null) yield return process;
 			}
 
@@ -113,12 +94,15 @@ namespace Framework.SceneManagement
 
 			if (transition != null)
 			{
-				transition.Exit();
-				yield return new WaitWhile(() => transition.IsTransiting);
+				yield return transition.Exit();
 			}
 
 			m_isLoading = false;
-			m_listeners.ForEach(i => i.OnLoadEnded(sceneName));
+
+			if (m_handler != null)
+			{
+				m_handler.OnLoadEnded(sceneName);
+			}
 		}
 
 

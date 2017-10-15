@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace Framework.SceneManagement
 {
@@ -8,8 +9,7 @@ namespace Framework.SceneManagement
 		// overridable function
 		//------------------------------------------------------
 
-		public abstract void Enter();
-		public abstract void Exit();
-		public abstract bool IsTransiting { get; }
+		public abstract IEnumerator Enter();
+		public abstract IEnumerator Exit();
 	}
 }
