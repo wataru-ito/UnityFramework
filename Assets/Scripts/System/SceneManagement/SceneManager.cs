@@ -15,7 +15,6 @@ namespace Framework.SceneManagement
 	public class SceneManager : SingletonBehaviour<SceneManager>
 	{
 		[SerializeField, SceneName] string m_defaultSceneName;
-		[SerializeField] SceneTransition m_defaultTransition;
 		[SerializeField] SceneTransition[] m_transitions;
 
 		bool m_isLoading;
@@ -59,14 +58,14 @@ namespace Framework.SceneManagement
 		//------------------------------------------------------
 
 		/// <summary>
-		/// transitionName に "" を指定するとトランジションなしにできる
+		/// transitionIndex に -1 を指定するとトランジションなしにできる
 		/// </summary>
-		public static void LoadScene(string sceneName, string transitionName = null)
+		public static void LoadScene(string sceneName, int transitionIndex = 0)
 		{
-			instance.LoadSceneConcrete(sceneName, transitionName);
+			instance.LoadSceneConcrete(sceneName, transitionIndex);
 		}
 
-		void LoadSceneConcrete(string sceneName, string transitionName)
+		void LoadSceneConcrete(string sceneName, int transitionIndex)
 		{
 			if (m_isLoading)
 			{
@@ -74,9 +73,9 @@ namespace Framework.SceneManagement
 				return;
 			}
 
-			var transisiton = transitionName == null ? 
-				m_defaultTransition : 
-				System.Array.Find(m_transitions, i => i.transitionName.Equals(transitionName));
+			var transisiton = transitionIndex >= 0 && transitionIndex < m_transitions.Length ? 
+				m_transitions[transitionIndex] : 
+				null;
 			
 			StartCoroutine(yLoadScene(sceneName, transisiton));
 		}
@@ -139,22 +138,5 @@ namespace Framework.SceneManagement
 				m_current = null;
 			}
 		}
-
-
-		//------------------------------------------------------
-		// editor
-		//------------------------------------------------------
-#if UNITY_EDITOR
-
-		void OnValidate()
-		{
-			if (m_defaultTransition == null && m_transitions != null && m_transitions.Length > 0)
-			{
-				m_defaultTransition = m_transitions[0];
-			}
-		}
-
-#endif
-
 	}
 }

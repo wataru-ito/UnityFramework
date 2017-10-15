@@ -8,7 +8,6 @@ namespace Framework.SceneManagement
 		// overridable function
 		//------------------------------------------------------
 
-		public abstract string transitionName { get; }
 		public abstract void Enter();
 		public abstract void Exit();
 		public abstract bool IsTransiting { get; }

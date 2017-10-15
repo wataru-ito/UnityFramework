@@ -22,11 +22,6 @@ namespace Framework.SceneManagement
 		// ISceneTransition
 		//------------------------------------------------------
 
-		public override string transitionName
-		{
-			get { return "Fade"; }
-		}
-
 		public override void Enter()
 		{
 			m_fader.color = m_color;
