@@ -1,13 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using PreloadProcess = System.Func<string, System.Collections.IEnumerator>;
 
 namespace Framework.SceneManagement
 {
 	public interface ISceneManagementHandler
 	{
-		void OnLoadBegan();
-		void OnLoadEnded();
+		void OnLoadBegan(string sceneName);
+		void OnLoadEnded(string sceneName);
 	}
 
 
@@ -20,6 +21,7 @@ namespace Framework.SceneManagement
 		bool m_isLoading;
 		SceneBehaviour m_current;
 
+		PreloadProcess m_preloadProcess;
 		List<ISceneManagementHandler> m_listeners = new List<ISceneManagementHandler>();
 
 
@@ -39,6 +41,17 @@ namespace Framework.SceneManagement
 				s_instance.m_listeners.Remove(listener);
 			}
 		}
+
+
+		//------------------------------------------------------
+		// settings
+		//------------------------------------------------------
+
+		public void SetPreloadProcess(PreloadProcess preloadProcess)
+		{
+			m_preloadProcess = preloadProcess;
+		}
+
 
 
 		//------------------------------------------------------
@@ -71,12 +84,18 @@ namespace Framework.SceneManagement
 		IEnumerator yLoadScene(string sceneName, SceneTransition transition)
 		{
 			m_isLoading = true;
-			m_listeners.ForEach(i => i.OnLoadBegan());
+			m_listeners.ForEach(i => i.OnLoadBegan(sceneName));
 
 			if (transition != null)
 			{
 				transition.Enter();
 				yield return new WaitWhile(() => transition.IsTransiting);
+			}
+
+			if (m_preloadProcess != null)
+			{
+				var process = m_preloadProcess(sceneName);
+				if (process != null) yield return process;
 			}
 
 			yield return UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName,
@@ -100,7 +119,7 @@ namespace Framework.SceneManagement
 			}
 
 			m_isLoading = false;
-			m_listeners.ForEach(i => i.OnLoadEnded());
+			m_listeners.ForEach(i => i.OnLoadEnded(sceneName));
 		}
 
 
