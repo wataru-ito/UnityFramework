@@ -8,7 +8,7 @@ namespace Framework.VFX
 	/// Faderが使うカメラはenabled制御されるので何も映さないフェーダー用のカメラ
 	/// </summary>
 	[RequireComponent(typeof(Camera))]
-	public class Fader : SingletonBehaviour<Fader>
+	public sealed class Fader : MonoBehaviour
 	{
 		[SerializeField] Material m_material;
 		[SerializeField] Color m_color;
@@ -27,10 +27,8 @@ namespace Framework.VFX
 		// unity system function
 		//------------------------------------------------------
 
-		protected override void Awake()
+		void Awake()
 		{
-			base.Awake();
-
 			m_camera = GetComponent<Camera>();
 			m_materialInstance = Instantiate<Material>(m_material);
 			m_colorId = Shader.PropertyToID("_Color");
@@ -44,10 +42,8 @@ namespace Framework.VFX
 			StopIntepolate();
 		}
 
-		protected override void OnDestroy()
+		void OnDestroy()
 		{
-			base.OnDestroy();
-
 			if (m_materialInstance)
 			{
 				Destroy(m_materialInstance);

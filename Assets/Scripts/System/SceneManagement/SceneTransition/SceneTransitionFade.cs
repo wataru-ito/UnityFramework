@@ -3,21 +3,11 @@ using UnityEngine;
 
 namespace Framework.SceneManagement
 {
-	public class SceneTransitionFade : SceneTransition
+	public sealed class SceneTransitionFade : SceneTransition
 	{
 		[SerializeField] Color m_color;
 		[SerializeField] float m_duration;
 		[SerializeField] VFX.Fader m_fader;
-
-		//------------------------------------------------------
-		// unity system function
-		//------------------------------------------------------
-
-		void Awake()
-		{
-			if (!m_fader)
-				m_fader = VFX.Fader.instance;
-		}
 
 		//------------------------------------------------------
 		// ISceneTransition

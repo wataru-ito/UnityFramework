@@ -150,7 +150,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_defaultSceneName: Title
-  m_defaultTransition: {fileID: 73623242}
   m_transitions:
   - {fileID: 73623242}
 --- !u!114 &73623242
@@ -277,6 +276,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_targetFrameRate: 30
+  m_fader: {fileID: 329798171}
 --- !u!4 &978838941
 Transform:
   m_ObjectHideFlags: 0

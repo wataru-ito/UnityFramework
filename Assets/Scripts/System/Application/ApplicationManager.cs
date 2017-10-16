@@ -8,6 +8,7 @@ namespace Framework
 	public class ApplicationManager : SingletonBehaviour<ApplicationManager>
 	{
 		[SerializeField] int m_targetFrameRate;
+		[SerializeField] VFX.Fader m_fader;
 		bool m_setup;
 
 		//------------------------------------------------------
@@ -52,6 +53,16 @@ namespace Framework
 				return;
 
 			MessageBox.YesNo("Game", "ゲームを終了する", yes:Application.Quit);
+		}
+
+
+		//------------------------------------------------------
+		// entities
+		//------------------------------------------------------
+
+		public VFX.Fader fader
+		{
+			get { return m_fader; }
 		}
 	}
 }
