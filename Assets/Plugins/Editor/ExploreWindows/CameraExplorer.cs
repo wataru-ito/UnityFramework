@@ -35,23 +35,21 @@ namespace ExplorerWindows
 
 			m_columns = new Column[]
 			{
-				new Column("Name", 120f, NameField),
-				new Column("On", 26f, EnabledField),
-				new Column("Depth", 60f, DepthField),
-				new Column("Culling Mask", 120f, CullingMaskField),
-				new Column("Clear Flags", 200f, ClearFlagsField),
+				new Column("On", 26f, EnabledField, CompareEnabled, flexible:false),
+				new Column("Depth", 60f, DepthField, CompareDepth),
+				new Column("Culling Mask", 120f, CullingMaskField, CompareCullingMask),
+				new Column("Clear Flags", 200f, ClearFlagsField, CompareClearFlags),
 			};
+
+			UpdateLayerOptions();
 
 			base.OnEnable();
 		}
 
-		protected override void OnGUI()
+		protected override void OnFocus()
 		{
-			m_layerOptions = Enumerable.Range(0, 32)
-				.Select(i => LayerMask.LayerToName(i))
-				.ToArray();
-	
-			base.OnGUI();
+			base.OnFocus();
+			UpdateLayerOptions();
 		}
 
 
@@ -71,7 +69,6 @@ namespace ExplorerWindows
 			// ここで寝かせた奴はここで有効にしたいので追加しておく
 			// > 通常寝た奴はそもそもCamera.allCamerasで取得されない
 			tmp.AddRange(prev.Where(i => i && !i.enabled));
-			tmp.Sort(CameraCompareTo);
 
 			if (!string.IsNullOrEmpty(m_searchString))
 			{
@@ -81,11 +78,6 @@ namespace ExplorerWindows
 			return tmp;
 		}
 
-		static int CameraCompareTo(Camera x, Camera y)
-		{
-			var result = x.depth.CompareTo(y.depth);
-			return result == 0 ? x.name.CompareTo(y.name) : result;
-		}
 
 		protected override void DrawHeader()
 		{
@@ -106,29 +98,55 @@ namespace ExplorerWindows
 		// camera column field
 		//------------------------------------------------------
 
-		void NameField(Rect r, Camera camera)
+		void UpdateLayerOptions()
 		{
-			EditorGUI.LabelField(r, camera.name, m_labelStyle);
+			m_layerOptions = Enumerable.Range(0, 32)
+					.Select(i => LayerMask.LayerToName(i))
+					.ToArray();
 		}
 
-		void EnabledField(Rect r, Camera camera)
+		void EnabledField(Rect r, Camera camera, bool selected)
 		{
 			camera.enabled = EditorGUI.Toggle(r, camera.enabled);
 		}
 
-		void DepthField(Rect r, Camera camera)
+		int CompareEnabled(Camera x, Camera y)
+		{
+			var res = x.enabled.CompareTo(y.enabled);
+			return res != 0 ? res : x.name.CompareTo(y.name);
+		}
+
+		void DepthField(Rect r, Camera camera, bool selected)
 		{
 			camera.depth = EditorGUI.FloatField(r, camera.depth);
 		}
 
-		void CullingMaskField(Rect r, Camera camera)
+		int CompareDepth(Camera x, Camera y)
+		{
+			var res = x.depth.CompareTo(y.depth);
+			return res != 0 ? res : x.name.CompareTo(y.name);
+		}
+		
+		void CullingMaskField(Rect r, Camera camera, bool selected)
 		{
 			camera.cullingMask = EditorGUI.MaskField(r, GUIContent.none, camera.cullingMask, m_layerOptions);
 		}
 
-		void ClearFlagsField(Rect r, Camera camera)
+		int CompareCullingMask(Camera x, Camera y)
+		{
+			var res = x.cullingMask.CompareTo(y.cullingMask);
+			return res != 0 ? res : x.name.CompareTo(y.name);
+		}
+
+		void ClearFlagsField(Rect r, Camera camera, bool selected)
 		{
 			camera.clearFlags = (CameraClearFlags)EditorGUI.EnumPopup(r, camera.clearFlags);
+		}
+
+		int CompareClearFlags(Camera x, Camera y)
+		{
+			var res = x.clearFlags.CompareTo(y.clearFlags);
+			return res != 0 ? res : x.name.CompareTo(y.name);
 		}
 	}
 }

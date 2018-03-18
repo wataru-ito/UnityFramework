@@ -7,7 +7,7 @@ using UnityEditor;
 namespace DefineSymbolEditor
 {
 	[Serializable]
-	class DefineSymbolData
+	class DefineSymbolData : IDefineSymbolData
 	{
 		const string kFilePath = "ProjectSettings/DefineSymbolEditor.txt";
 
@@ -58,6 +58,21 @@ namespace DefineSymbolEditor
 			catch (Exception)
 			{
 			}
+		}
+
+
+		//------------------------------------------------------
+		// IDefineSymbolData
+		//------------------------------------------------------
+
+		public string GetCommonSymbols()
+		{
+			return commonSymbols;
+		}
+
+		public string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup)
+		{
+			return PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
 		}
 
 

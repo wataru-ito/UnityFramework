@@ -4,7 +4,7 @@ using UnityEditor;
 namespace DefineSymbolEditor
 {
 	[Serializable]
-	class DefineSymbolPreset
+	class DefineSymbolPreset : IDefineSymbolData
 	{
 		[Serializable]
 		public struct Symbol
@@ -24,6 +24,16 @@ namespace DefineSymbolEditor
 			preset.commonSymbols = common.ToSymbols();
 			preset.symbols = Array.ConvertAll(status, i => new Symbol { target = i.target, symbol = i.ToSymbols() });
 			return preset;
+		}
+
+
+		//------------------------------------------------------
+		// IDefineSymbolData
+		//------------------------------------------------------
+
+		public string GetCommonSymbols()
+		{
+			return commonSymbols;
 		}
 
 		public string GetScriptingDefineSymbolsForGroup(BuildTargetGroup targetGroup)
