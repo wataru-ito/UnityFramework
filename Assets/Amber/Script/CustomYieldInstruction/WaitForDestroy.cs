@@ -1,16 +1,19 @@
 ﻿using UnityEngine;
 
-public class WaitForDestroy : CustomYieldInstruction
+namespace Amber
 {
-	Object m_obj;
-
-	public WaitForDestroy(Object obj)
+	public class WaitForDestroy : CustomYieldInstruction
 	{
-		m_obj = obj;
-	}
+		Object m_obj;
 
-	public override bool keepWaiting
-	{
-		get { return m_obj; }
+		public WaitForDestroy(Object obj)
+		{
+			m_obj = obj;
+		}
+
+		public override bool keepWaiting
+		{
+			get { return m_obj; }
+		}
 	}
 }

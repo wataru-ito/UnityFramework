@@ -1,17 +1,20 @@
 ﻿using UnityEngine;
 
-public static class ExtentionsMethods
+namespace Amber
 {
-	//------------------------------------------------------
-	// GameObject
-	//------------------------------------------------------
-
-	public static void SetLayerRecursively(this GameObject go, int layer)
+	public static class ExtentionsMethods
 	{
-		go.layer = layer;
-		foreach (Transform t in go.transform)
+		//------------------------------------------------------
+		// GameObject
+		//------------------------------------------------------
+
+		public static void SetLayerRecursively(this GameObject go, int layer)
 		{
-			SetLayerRecursively(t.gameObject, layer);
+			go.layer = layer;
+			foreach (Transform t in go.transform)
+			{
+				SetLayerRecursively(t.gameObject, layer);
+			}
 		}
 	}
 }

@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 
-public class LayerNameAttribute : PropertyAttribute 
+namespace Amber
 {
+	public class LayerNameAttribute : PropertyAttribute
+	{
+	}
 }

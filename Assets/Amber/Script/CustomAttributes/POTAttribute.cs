@@ -1,16 +1,19 @@
 ﻿using UnityEngine;
 
-// <summary>
-// Power of two
-// </summary>
-public class POTAttribute : PropertyAttribute 
+namespace Amber
 {
-	public int min;
-	public int max;
-
-	public POTAttribute(int min = 1, int max = 4068)
+	// <summary>
+	// Power of two
+	// </summary>
+	public class POTAttribute : PropertyAttribute
 	{
-		this.min = min;
-		this.max = max;
+		public int min;
+		public int max;
+
+		public POTAttribute(int min = 1, int max = 4068)
+		{
+			this.min = min;
+			this.max = max;
+		}
 	}
 }

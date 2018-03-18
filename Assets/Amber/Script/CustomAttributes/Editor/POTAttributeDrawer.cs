@@ -3,46 +3,49 @@ using UnityEditor;
 using System;
 using System.Linq;
 
-[CustomPropertyDrawer(typeof(POTAttribute))]
-public class POTAttributeDrawer : PropertyDrawer
+namespace Amber
 {
-	string[] m_displayOptions;
-	int[] m_optionValues;
-	
-	public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+	[CustomPropertyDrawer(typeof(POTAttribute))]
+	public class POTAttributeDrawer : PropertyDrawer
 	{
-		if (property.propertyType != SerializedPropertyType.Integer)
+		string[] m_displayOptions;
+		int[] m_optionValues;
+
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
-			EditorGUI.LabelField(position, property.displayName, "Use POT with integer.");
-			return;
-		}
-		
-		if (m_displayOptions == null)
-		{	
-			var potAttribute = attribute as POTAttribute;
-			var min = Bit(potAttribute.min);
-			var max = Bit(potAttribute.max);
-			m_optionValues = Enumerable.Range(min, max - min).Select(i => 1 << i).ToArray();
-			m_displayOptions = Array.ConvertAll(m_optionValues, i => i.ToString());
+			if (property.propertyType != SerializedPropertyType.Integer)
+			{
+				EditorGUI.LabelField(position, property.displayName, "Use POT with integer.");
+				return;
+			}
+
+			if (m_displayOptions == null)
+			{
+				var potAttribute = attribute as POTAttribute;
+				var min = Bit(potAttribute.min);
+				var max = Bit(potAttribute.max);
+				m_optionValues = Enumerable.Range(min, max - min).Select(i => 1 << i).ToArray();
+				m_displayOptions = Array.ConvertAll(m_optionValues, i => i.ToString());
+			}
+
+			if (m_displayOptions.Length == 0)
+			{
+				EditorGUI.LabelField(position, property.displayName, "Invalid Range.");
+				return;
+			}
+
+			property.intValue = EditorGUI.IntPopup(position,
+				property.displayName,
+				property.intValue,
+				m_displayOptions,
+				m_optionValues);
 		}
 
-		if (m_displayOptions.Length == 0)
+		static int Bit(int n)
 		{
-			EditorGUI.LabelField(position, property.displayName, "Invalid Range.");
-			return;
+			int bit = 0;
+			for (; n > 1; ++bit) n >>= 1;
+			return bit;
 		}
-		
-		property.intValue = EditorGUI.IntPopup(position, 
-			property.displayName, 
-			property.intValue, 
-			m_displayOptions, 
-			m_optionValues);
-	}
-
-	static int Bit(int n)
-	{
-		int bit = 0;
-		for (; n > 1; ++bit) n >>= 1;
-		return bit;		
 	}
 }

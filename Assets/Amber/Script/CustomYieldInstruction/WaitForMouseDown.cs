@@ -1,16 +1,19 @@
 ﻿using UnityEngine;
 
-public class WaitForMouseDown : CustomYieldInstruction
+namespace Amber
 {
-	int m_button;
-
-	public WaitForMouseDown(int button = 0)
+	public class WaitForMouseDown : CustomYieldInstruction
 	{
-		m_button = button;
-	}
+		int m_button;
 
-	public override bool keepWaiting
-	{
-		get { return !Input.GetMouseButtonDown(m_button); }
+		public WaitForMouseDown(int button = 0)
+		{
+			m_button = button;
+		}
+
+		public override bool keepWaiting
+		{
+			get { return !Input.GetMouseButtonDown(m_button); }
+		}
 	}
 }

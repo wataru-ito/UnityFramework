@@ -1,11 +1,14 @@
 ﻿using UnityEngine;
 
-public class SceneNameAttribute : PropertyAttribute 
+namespace Amber
 {
-	public bool findFromAssetDatabase;
-
-	public SceneNameAttribute(bool findFromAssetDatabase = false)
+	public class SceneNameAttribute : PropertyAttribute
 	{
-		this.findFromAssetDatabase = findFromAssetDatabase;
+		public bool findFromAssetDatabase;
+
+		public SceneNameAttribute(bool findFromAssetDatabase = false)
+		{
+			this.findFromAssetDatabase = findFromAssetDatabase;
+		}
 	}
 }
