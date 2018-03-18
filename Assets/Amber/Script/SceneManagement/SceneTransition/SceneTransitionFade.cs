@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-namespace Framework.SceneManagement
+namespace Amber.SceneManagement
 {
 	public sealed class SceneTransitionFade : SceneTransition
 	{

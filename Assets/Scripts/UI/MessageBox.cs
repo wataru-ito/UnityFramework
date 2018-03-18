@@ -2,7 +2,7 @@
 using UnityEngine.UI;
 using Callback = System.Action;
 
-namespace Framework.UI
+namespace Amber.UI
 {
 	/// <summary>
 	/// トランジション再生用にAnimator

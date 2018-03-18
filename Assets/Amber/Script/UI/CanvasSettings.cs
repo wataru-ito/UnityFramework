@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Framework.UI
+namespace Amber.UI
 {
 	/// <summary>
 	/// Canvasよりも先に実行されること

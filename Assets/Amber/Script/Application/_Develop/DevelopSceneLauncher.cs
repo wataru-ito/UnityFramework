@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Framework
+namespace Amber
 {
 	/// <summary>
 	/// そのシーンを直接起動させるために必要な事前処理をやる

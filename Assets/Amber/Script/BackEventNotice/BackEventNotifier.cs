@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Events;
 
-namespace Framework.BackEventNotice
+namespace Amber.BackEventNotice
 {
 	public class BackEventNotifier : MonoBehaviour
 	{

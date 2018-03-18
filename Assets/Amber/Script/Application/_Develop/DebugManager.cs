@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using DebugMenuSystem;
 
-namespace Framework.DebugSystem
+namespace Amber.DebugSystem
 {
 	public class DebugManager : MonoBehaviour
 	{

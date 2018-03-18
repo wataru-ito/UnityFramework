@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 
-namespace Framework.Title
+namespace Amber.Title
 {
 	public class TitleManager : SceneManagement.SceneBehaviour
 	{

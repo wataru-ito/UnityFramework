@@ -1,9 +1,9 @@
 ﻿using System.Collections;
 using UnityEngine;
-using Framework.UI;
-using Framework.DebugSystem;
+using Amber.UI;
+using Amber.DebugSystem;
 
-namespace Framework
+namespace Amber
 {
 	public class ApplicationManager : SingletonBehaviour<ApplicationManager>
 	{

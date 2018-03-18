@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using Framework.UI;
+using Amber.UI;
 
-namespace Framework.Game
+namespace Amber.Game
 {
 	public class GameManager : SceneManagement.SceneBehaviour
 	{

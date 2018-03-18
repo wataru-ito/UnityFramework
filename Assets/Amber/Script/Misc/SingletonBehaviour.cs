@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace Framework
+namespace Amber
 {
 	public class SingletonBehaviour<T> : MonoBehaviour
 		where T : MonoBehaviour

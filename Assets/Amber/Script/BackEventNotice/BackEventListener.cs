@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Events;
 
-namespace Framework.BackEventNotice
+namespace Amber.BackEventNotice
 {
 	public class BackEventListener : MonoBehaviour
 	{

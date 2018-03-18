@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Framework
+namespace Amber
 {
 	public class ApplicationLauncher : MonoBehaviour
 	{

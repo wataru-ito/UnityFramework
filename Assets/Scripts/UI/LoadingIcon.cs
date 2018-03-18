@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Framework.UI
+namespace Amber.UI
 {
 	public class LoadingIcon : MonoBehaviour
 	{

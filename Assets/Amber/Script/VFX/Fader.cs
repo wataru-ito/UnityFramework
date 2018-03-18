@@ -2,7 +2,7 @@
 using UnityEngine;
 using EndCallback = System.Action;
 
-namespace Framework.VFX
+namespace Amber.VFX
 {
 	/// <summary>
 	/// Faderが使うカメラはenabled制御されるので何も映さないフェーダー用のカメラ

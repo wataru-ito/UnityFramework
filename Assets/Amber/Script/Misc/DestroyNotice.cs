@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System;
 
-namespace Framework
+namespace Amber
 {
 	public class DestroyNotice : MonoBehaviour
 	{

@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
-namespace Framework
+namespace Amber
 {
 	public class DevelopTop : MonoBehaviour
 	{

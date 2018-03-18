@@ -81,7 +81,7 @@ namespace BuiltinViewer
 					}
 					break;
 
-				case EventType.keyDown:
+				case EventType.KeyDown:
 					switch (Event.current.keyCode)
 					{
 						case KeyCode.UpArrow:

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Framework.SceneManagement
+namespace Amber.SceneManagement
 {
 	/// <summary>
 	/// 各シーンに一つ置いておく
