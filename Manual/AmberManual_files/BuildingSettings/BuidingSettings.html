@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amber Manual</title>
+  </head>
+  <body>
+		
+		<h1>ビルド設定</h1>
+		<div style="padding-left : 16px">
+			<img src="./buildingsettings.jpg"><br>
+			
+			<span style="font-size : x-large"><b>DevelopTopとLauncherの並びは変えてはいけない</b></span>
+			
+			<h4>DevelopTop</h4>
+			<div style="padding-left : 16px">
+				0:DevelopTop が開発用のデバッグ起動画面。<br>
+				ここで接続サーバーの設定や起動シーンの選択を行う。<br>
+				リリースビルド時に無効化することで 1:のLauncherが起動するようになる。<br>
+			</div>
+			
+			<h4>Launcher</h4>
+			<div style="padding-left : 16px">
+				通常の起動シーン。<br>
+				ここでシステムの初期化などを行い、タイトル画面などに飛ばす<br>
+			</div>
+			
+			<h4>Common</h4>
+			<div style="padding-left : 16px">
+				全てのシーンで存在する共通インスタンスを置く場所。<br>
+				シングルトンなオブジェクトを置くならここ。<br>
+				Launcherシーンや後述のDebugAppLauncher等からロードされる。<br>
+			</div>
+			
+		</div>
+		
+  </body>
+</html>
