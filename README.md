@@ -1,47 +1,23 @@
-# AssetMessenger
-ProjectWindowでアセットにメッセージを表示できるようになります<br>
-つまり…<br>
-<b>プログラマ以外はログを見ない(偏見)。ならば異常を視覚的に表示してあげようじゃないか！というアセット</b>です。<br>
-警告マークが表示されてビビらせる効果抜群です。
-
-![イメージ](./Readme_files/assetmessenger.jpg)
-
-バッジを触るとメッセージが表示されます。<br>
-![イメージ](./Readme_files/assetmessenger_popup.jpg)
-
-
-## こんな時に便利
-
-ポストプロセッサと組み合わせて、異常のあるデータを表示してあげると便利。<br>
-異常の原因も教えてあげられます。
-
-
-# パッケージ
-[パッケージファイルはこちら](./AssetMessenger.unitypackage)
+# UnityFramework【Amber】
+Unityでゲームを作るときのフレームワーク部分。<br>
+シーン遷移、UI作成、開発効率を上げる様々な仕組み...<br>
+ゲームをより早く効率的に作れる環境を整える。<br>
 
 
 
-## 使い方 - UIから
+# 自作アセット群
 
-* アセットを`右クリック > AssetMessenger > Write`でメッセージ設定
-* アセットを`右クリック > AssetMessenger > Clear`でメッセージ削除
-![イメージ](./Readme_files/assetmessenger_assetmenu.jpg)
+* [AssetMessenger](https://github.com/wataru-ito/AssetMessenger)
+* [BuildinViewer](https://github.com/wataru-ito/BuiltinViewer)
+* [AssetPost](https://github.com/wataru-ito/AssetPost)
+* [SceneMenu](https://github.com/wataru-ito/SceneMenu)
+* [SceneWindow](https://github.com/wataru-ito/SceneWindow)
+* [DefineSymbolEditor](https://github.com/wataru-ito/DefineSymbolEditor)
+* [ExploreWindows](https://github.com/wataru-ito/ExploreWindows)
+* [DebugMenu](https://github.com/wataru-ito/DebugMenu)
 
+# Third Party Software
 
-* 一覧は 'Menu > Tools > AssetMessenger > 全メッセージ表示` から
-
-
-## 使い方 - コードから
-
-```C#
-using AssetMessageService;
-
-Object obj;
-AssetMessenger.Set(obj, "これでコメント設定", MessageType.Error);
-AssetMessenger.Clear(obj); // 削除
-
-// 投稿者を指定するとそのコメントは消せなくなる
-AssetMessenger.Set(obj, "これでコメント設定", MessageType.Error, "HogeHoge"); // HogeHoge以外からは消せない
-AssetMessenger.Clear(obj, "HogeHoge"); // 消すときはHogeHoge指定
-
-```
+* ライセンス不明
+	* [Lock Inspector - gist](https://gist.github.com/tsubaki/611043a80fef1e1023249ece58e2ae0a)
+	* [ContainClip - gist](https://gist.github.com/tsubaki/1bd80a625c41796f1e50)
