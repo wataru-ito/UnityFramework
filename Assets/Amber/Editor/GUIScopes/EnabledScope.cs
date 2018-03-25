@@ -17,4 +17,4 @@ namespace Amber
 			GUI.enabled = m_prev;
 		}
 	}
-}	
+}
