@@ -1,17 +1,20 @@
 ﻿using UnityEngine;
 
-public class ColorScope : GUI.Scope
+namespace Amber
 {
-	readonly Color m_prev;
-
-	public ColorScope(Color color)
+	public sealed class ColorScope : GUI.Scope
 	{
-		m_prev = GUI.color;
-		GUI.color = color;
-	}
+		readonly Color m_prev;
 
-	protected override void CloseScope()
-	{
-		GUI.color = m_prev;
+		public ColorScope(Color color)
+		{
+			m_prev = GUI.color;
+			GUI.color = color;
+		}
+
+		protected override void CloseScope()
+		{
+			GUI.color = m_prev;
+		}
 	}
 }

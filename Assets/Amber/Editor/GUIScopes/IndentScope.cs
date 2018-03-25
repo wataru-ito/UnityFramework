@@ -1,15 +1,18 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-public class IndentScope : GUI.Scope
+namespace Amber
 {
-	public IndentScope()
+	public sealed class IndentScope : GUI.Scope
 	{
-		++EditorGUI.indentLevel;
-	}
+		public IndentScope()
+		{
+			++EditorGUI.indentLevel;
+		}
 
-	protected override void CloseScope()
-	{
-		--EditorGUI.indentLevel;
+		protected override void CloseScope()
+		{
+			--EditorGUI.indentLevel;
+		}
 	}
 }
